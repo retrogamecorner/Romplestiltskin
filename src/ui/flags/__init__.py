@@ -1,0 +1,1 @@
+# Flag resources for region filtering

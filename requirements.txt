@@ -1,0 +1,18 @@
+# Core GUI Framework
+PyQt6>=6.5.0
+
+# XML Processing (alternative to built-in xml.etree.ElementTree)
+lxml>=4.9.0
+
+# String similarity for filename matching
+python-Levenshtein>=0.20.0
+
+# Progress bars and UI enhancements
+tqdm>=4.65.0
+
+# For building executable
+PyInstaller>=5.10.0
+
+# Development and testing
+pytest>=7.3.0
+pytest-qt>=4.2.0

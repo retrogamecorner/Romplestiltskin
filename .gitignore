@@ -1,0 +1,63 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+*.egg-info/
+.Python
+env/
+venv/
+ENV/
+ENV.*/
+pip-wheel-metadata/
+.installed.cfg
+*.egg
+dist/
+/build/
+/resources/
+
+# IDE specific files
+# Visual Studio Code
+.vscode/
+*.code-workspace
+
+# Visual Studio
+.vs/
+*.suo
+*.user
+*.userosscache
+*.sln.docstates
+*.sln.metaproj
+GeneratedAssemblyInfo/
+AppPackages/
+BundleArtifacts/
+Packages/
+TestResults/
+*.vcxproj.user
+*.vcxproj.filters
+*.vcxproj. liggen
+*.vcxproj.sqlite
+*.VC.db
+*.[Cc]ache
+*.opensdf
+*.sdf
+ipch/
+*.aps
+
+# Distribution / Packaging
+*.dmg
+*.exe
+*.msi
+*.pkg
+*.deb
+*.rpm
+*.apk
+*.aab
+*.tar.gz
+*.zip
+
+# Operating System files
+.DS_Store
+Thumbs.db
+ehthumbs.db
+Desktop.ini
