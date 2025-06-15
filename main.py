@@ -7,7 +7,29 @@ Main entry point for the application.
 
 import sys
 import os
+import logging
 from pathlib import Path
+
+# Configure logging only once
+root_logger = logging.getLogger()
+if not root_logger.handlers:
+    # Clear any existing handlers
+    root_logger.handlers.clear()
+    
+    # Set up logging
+    formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
+    
+    # Console handler
+    console_handler = logging.StreamHandler(sys.stdout)
+    console_handler.setFormatter(formatter)
+    root_logger.addHandler(console_handler)
+    
+    # File handler
+    file_handler = logging.FileHandler('romplestiltskin_debug.log')
+    file_handler.setFormatter(formatter)
+    root_logger.addHandler(file_handler)
+    
+    root_logger.setLevel(logging.DEBUG)
 
 # Add the src directory to the Python path
 src_path = Path(__file__).parent / "src"
@@ -33,9 +55,7 @@ def main():
     # Create main window and apply theme globally
     main_window = MainWindow(settings_manager, db_manager)
     
-    # Apply the theme to the entire application
-    stylesheet = main_window.get_stylesheet()
-    app.setStyleSheet(stylesheet)
+    # The MainWindow now handles its own styling internally
     
     main_window.show()
     

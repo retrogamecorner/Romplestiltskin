@@ -60,6 +60,23 @@ class ScannedROMsManager:
             """)
             
             conn.commit()
+
+    def update_rom_path(self, system_id: int, old_file_path: str, new_file_path: str):
+        """Update the file path of a specific ROM file.
+
+        Args:
+            system_id: ID of the system
+            old_file_path: The current path to the ROM file
+            new_file_path: The new path for the ROM file
+        """
+        with self.get_connection() as conn:
+            cursor = conn.cursor()
+            cursor.execute("""
+                UPDATE scanned_roms
+                SET file_path = ?
+                WHERE system_id = ? AND file_path = ?
+            """, (new_file_path, system_id, old_file_path))
+            conn.commit()
     
     @contextmanager
     def get_connection(self):
@@ -239,3 +256,20 @@ class ScannedROMsManager:
                     summary['duplicate'] = count
             
             return summary
+
+    def update_rom_status(self, system_id: int, file_path: str, new_status: ROMStatus):
+        """Update the status of a specific ROM file.
+
+        Args:
+            system_id: ID of the system
+            file_path: Path to the ROM file
+            new_status: The new ROMStatus for the file
+        """
+        with self.get_connection() as conn:
+            cursor = conn.cursor()
+            cursor.execute("""
+                UPDATE scanned_roms
+                SET status = ?
+                WHERE system_id = ? AND file_path = ?
+            """, (new_status.value, system_id, file_path))
+            conn.commit()

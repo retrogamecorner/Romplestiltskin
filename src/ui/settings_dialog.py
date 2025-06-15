@@ -14,7 +14,7 @@ from PyQt6.QtWidgets import (
     QDialog, QVBoxLayout, QHBoxLayout, QTabWidget, QWidget,
     QGroupBox, QLabel, QLineEdit, QPushButton, QSpinBox,
     QCheckBox, QComboBox, QFileDialog, QDialogButtonBox,
-    QFormLayout, QSlider, QTextEdit, QMessageBox
+    QFormLayout, QSlider, QTextEdit, QMessageBox, QListWidget
 )
 from PyQt6.QtCore import Qt, pyqtSignal
 from PyQt6.QtGui import QFont
@@ -299,7 +299,8 @@ class SettingsDialog(QDialog):
         output_layout.addRow(output_help)
         
         layout.addWidget(output_group)
-        
+
+
         layout.addStretch()
         self.tab_widget.addTab(tab, "Folders")
     
@@ -443,6 +444,57 @@ class SettingsDialog(QDialog):
             self.broken_folder_edit.setText(folder)
             self.temp_settings['broken_files_folder'] = folder
     
+    def get_button_styles(self):
+        """Helper to provide consistent button styles."""
+        # These styles are copied from create_general_tab for consistency
+        modern_button_style = """
+            QPushButton {
+                background-color: #2196f3;
+                color: white;
+                border: none;
+                border-radius: 6px;
+                padding: 8px 16px;
+                font-size: 12px;
+                font-weight: bold;
+                min-height: 16px;
+            }
+            QPushButton:hover {
+                background-color: #1976d2;
+            }
+            QPushButton:pressed {
+                background-color: #0d47a1;
+            }
+        """
+        secondary_button_style = """
+            QPushButton {
+                background-color: #757575;
+                color: white;
+                border: none;
+                border-radius: 6px;
+                padding: 8px 16px;
+                font-size: 12px;
+                font-weight: bold;
+                min-height: 16px;
+            }
+            QPushButton:hover {
+                background-color: #616161;
+            }
+            QPushButton:pressed {
+                background-color: #424242;
+            }
+        """
+        return {"modern": modern_button_style, "secondary": secondary_button_style}
+
+
+
+    def remove_general_rom_folder(self):
+        selected_items = self.rom_folders_list.selectedItems()
+        if not selected_items: 
+            QMessageBox.warning(self, "No Selection", "Please select a folder to remove.")
+            return
+        for item in selected_items:
+            self.rom_folders_list.takeItem(self.rom_folders_list.row(item))
+
     def update_similarity_label(self, value: int):
         """Update similarity threshold label."""
         self.similarity_label.setText(f"{value}%")
@@ -451,7 +503,16 @@ class SettingsDialog(QDialog):
     def load_settings(self):
         """Load current settings into the UI."""
         # General tab
-        region_priority = self.temp_settings.get('region_priority', ['USA', 'Europe', 'Japan', 'World'])
+        region_priority = self.temp_settings.get('region_priority', [
+            # Top priority regions in specified order
+            "USA", "Japan", "Europe", "World", "UK",
+            # Other regions in alphabetical order
+            "Australia", "Austria", "Belgium", "Bulgaria", "Canada", "Croatia", 
+            "Cyprus", "Czech Republic", "Denmark", "Estonia", "Finland", "France", 
+            "Germany", "Greece", "Hungary", "Ireland", "Italy", "Latvia", 
+            "Lithuania", "Luxembourg", "Malta", "Netherlands", "Poland", 
+            "Portugal", "Romania", "Slovakia", "Slovenia", "Spain", "Sweden"
+        ])
         self.region_priority_list.set_items(region_priority)
         
         language_priority = self.temp_settings.get('language_priority', ['En', 'Es', 'Fr', 'De', 'It', 'Pt', 'Ja'])
@@ -470,7 +531,7 @@ class SettingsDialog(QDialog):
         self.broken_folder_edit.setText(
             self.temp_settings.get('broken_files_folder', '')
         )
-        
+
         # Filters tab
         filters = self.temp_settings.get('default_filters', {})
         self.show_beta_cb.setChecked(filters.get('show_beta', False))
@@ -500,7 +561,7 @@ class SettingsDialog(QDialog):
         threshold = int(self.temp_settings.get('similarity_threshold', 0.8) * 100)
         self.similarity_threshold_slider.setValue(threshold)
         self.update_similarity_label(threshold)
-        
+
         self.enable_debug_logging_cb.setChecked(
             self.temp_settings.get('enable_debug_logging', False)
         )
@@ -546,7 +607,7 @@ class SettingsDialog(QDialog):
         self.temp_settings['similarity_threshold'] = self.similarity_threshold_slider.value() / 100.0
         self.temp_settings['enable_debug_logging'] = self.enable_debug_logging_cb.isChecked()
         self.temp_settings['log_file_operations'] = self.log_file_operations_cb.isChecked()
-    
+
     def add_region(self):
         """Add a new region to the priority list."""
         text = self.add_region_edit.text().strip()
@@ -573,10 +634,20 @@ class SettingsDialog(QDialog):
         """Apply settings without closing dialog."""
         self.save_settings_from_ui()
         
-        # Update settings manager
+        # Apply settings from temp_settings to actual settings_manager
         for key, value in self.temp_settings.items():
-            self.settings_manager.set(key, value)
-        
+            if key == 'system_filter_settings':
+                # value is a dict like {system_id: settings_dict}
+                for sys_id, settings_val in value.items():
+                    self.settings_manager.set_system_filter_settings(sys_id, settings_val)
+            elif key == 'system_rom_folders':
+                # value is a dict like {system_id: folder_paths_list}
+                for sys_id, folder_paths in value.items():
+                    self.settings_manager.set_system_rom_folders(sys_id, folder_paths)
+            elif hasattr(self.settings_manager, f"set_{key}"):
+                getattr(self.settings_manager, f"set_{key}")(value)
+            # Add other special cases if necessary
+
         self.settings_manager.save_settings()
     
     def accept_settings(self):
@@ -774,28 +845,93 @@ class SettingsDialog(QDialog):
         )
         
         if reply == QMessageBox.StandardButton.Yes:
+            errors = []
+            
             try:
-                # Reset database
+                # Clear all ignored CRCs from settings before deletion
+                self.settings_manager.set("ignored_crcs", [])
+                # Clear all system-specific ignored CRCs
+                if "system_ignored_crcs" in self.settings_manager.settings:
+                    self.settings_manager.settings["system_ignored_crcs"] = {}
+                # Clear all system-specific filter settings
+                if "system_filter_settings" in self.settings_manager.settings:
+                    self.settings_manager.settings["system_filter_settings"] = {}
+                # Clear global filter settings that serve as defaults
+                if "filter_settings" in self.settings_manager.settings:
+                    self.settings_manager.settings["filter_settings"] = {}
+                
+                if not self.settings_manager.save_settings():
+                    errors.append("Failed to save cleared settings during reset.")
+                
+                # Force garbage collection to release any database file handles
+                # The DatabaseManager uses context managers so connections are auto-closed
+                
+                # Force garbage collection to release any file handles
+                import gc
+                gc.collect()
+                
+                # Get paths before attempting deletion
+                app_data = Path.home() / ".romplestiltskin"
+                db_path = None
+                config_path = None
+                
                 if hasattr(self.settings_manager, 'db_manager'):
                     db_path = self.settings_manager.db_manager.db_path
-                    if db_path.exists():
+                
+                config_path = self.settings_manager.config_file
+                
+                # Try to delete individual files first
+                if db_path and db_path.exists():
+                    try:
                         db_path.unlink()
+                        if db_path.exists():
+                            errors.append(f"Database file still exists: {db_path}")
+                    except Exception as e:
+                        errors.append(f"Could not delete database: {e}")
                 
-                # Reset settings
-                if self.settings_manager.config_file.exists():
-                    self.settings_manager.config_file.unlink()
+                if config_path and config_path.exists():
+                    try:
+                        config_path.unlink()
+                        if config_path.exists():
+                            errors.append(f"Config file still exists: {config_path}")
+                    except Exception as e:
+                        errors.append(f"Could not delete config: {e}")
                 
-                # Clear any cache directories
-                app_data = Path.home() / ".romplestiltskin"
+                # Try to remove the entire directory as a fallback
                 if app_data.exists():
-                    shutil.rmtree(app_data)
+                    try:
+                        shutil.rmtree(app_data, ignore_errors=True)
+                        # Verify deletion
+                        if app_data.exists():
+                            # Try force deletion on Windows
+                            import os
+                            import stat
+                            def handle_remove_readonly(func, path, exc):
+                                os.chmod(path, stat.S_IWRITE)
+                                func(path)
+                            
+                            shutil.rmtree(app_data, onerror=handle_remove_readonly)
+                            
+                            if app_data.exists():
+                                errors.append(f"Could not completely remove directory: {app_data}")
+                    except Exception as e:
+                        errors.append(f"Could not remove app data directory: {e}")
                 
-                QMessageBox.information(
-                    self,
-                    "Reset Complete",
-                    "Program has been reset successfully.\n\n"
-                    "Please restart the application."
-                )
+                if errors:
+                    error_msg = "Reset completed with warnings:\n\n" + "\n".join(errors)
+                    error_msg += "\n\nSome files may need to be manually deleted.\nPlease restart the application."
+                    QMessageBox.warning(
+                        self,
+                        "Reset Complete with Warnings",
+                        error_msg
+                    )
+                else:
+                    QMessageBox.information(
+                        self,
+                        "Reset Complete",
+                        "Program has been reset successfully.\n\n"
+                        "Please restart the application."
+                    )
                 
                 # Close the dialog and signal parent to restart
                 self.accept()
@@ -804,7 +940,9 @@ class SettingsDialog(QDialog):
                 QMessageBox.critical(
                     self,
                     "Reset Failed",
-                    f"Failed to reset program: {str(e)}"
+                    f"Failed to reset program: {str(e)}\n\n"
+                    f"You may need to manually delete:\n"
+                    f"• {Path.home() / '.romplestiltskin'}"
                 )
     
     def remove_selected_system(self):

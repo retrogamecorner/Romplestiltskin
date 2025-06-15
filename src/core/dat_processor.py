@@ -78,7 +78,36 @@ class DATProcessor:
                 dat_files.append(str(file_path))
         
         return sorted(dat_files)
-    
+
+    def import_dat_file(self, dat_file_path: str, progress_callback: Optional[callable] = None) -> bool:
+        """Import a single DAT file into the database.
+
+        Args:
+            dat_file_path: Path to the DAT file
+            progress_callback: Optional callback function for progress updates (current_game, total_games)
+
+        Returns:
+            True if import was successful, False otherwise.
+        """
+        parsed_data = self.parse_dat_file(dat_file_path)
+        if not parsed_data:
+            return False
+
+        system_id = self.db_manager.add_system(parsed_data['system_name'], dat_file_path)
+        if not system_id:
+            print(f"Failed to add or find system: {parsed_data['system_name']}")
+            return False
+
+        total_games = len(parsed_data['games'])
+        for i, game_data in enumerate(parsed_data['games']):
+            self.db_manager.add_game(system_id, game_data)
+            if progress_callback:
+                progress_callback(i + 1, total_games)
+        
+        # After processing all games for this DAT, update system game count
+        self.db_manager.update_system_game_count(system_id)
+        return True
+
     def parse_dat_file(self, dat_file_path: str) -> Optional[Dict[str, Any]]:
         """Parse a DAT file and extract system and game information.
         
@@ -120,6 +149,28 @@ class DATProcessor:
         except Exception as e:
             print(f"Unexpected error parsing DAT file {dat_file_path}: {e}")
             return None
+
+    def import_dat_folder(self, dat_folder: str, progress_callback: Optional[callable] = None) -> Tuple[int, int]:
+        """Import all DAT files from a folder into the database.
+
+        Args:
+            dat_folder: Path to folder containing DAT files
+            progress_callback: Optional callback for overall file progress (current_file, total_files)
+
+        Returns:
+            Tuple (successful_imports, total_files)
+        """
+        dat_files = self.scan_dat_folder(dat_folder)
+        total_files = len(dat_files)
+        successful_imports = 0
+
+        for i, dat_file_path in enumerate(dat_files):
+            if self.import_dat_file(dat_file_path): # We can pass a game-level progress callback here if needed
+                successful_imports += 1
+            if progress_callback:
+                progress_callback(i + 1, total_files)
+
+        return successful_imports, total_files
     
     def _parse_game_element(self, game_elem) -> Optional[Dict[str, Any]]:
         """Parse a single game element from DAT XML.
@@ -152,7 +203,10 @@ class DATProcessor:
             
             # Determine if verified dump
             is_verified = (status == 'verified') or bool(self.VERIFIED_REGEX.search(dat_game_name))
-            
+            is_pirate = bool(self.PIRATE_REGEX.search(dat_game_name))
+            is_hack = bool(self.HACK_REGEX.search(dat_game_name))
+            is_trainer = bool(self.TRAINER_REGEX.search(dat_game_name))
+
             game_data = {
                 'dat_game_name': dat_game_name,
                 'dat_rom_name': dat_rom_name,
@@ -167,6 +221,9 @@ class DATProcessor:
                 'is_unofficial_translation': parsed_attrs['is_unofficial_translation'],
                 'is_verified_dump': is_verified,
                 'is_modified_release': parsed_attrs['is_modified_release'],
+                'is_pirate': is_pirate,
+                'is_hack': is_hack,
+                'is_trainer': is_trainer,
                 'is_overdump': parsed_attrs['is_overdump'],
                 'crc32': crc32,
                 'size': size,
@@ -306,57 +363,3 @@ class DATProcessor:
                     return version
         
         return 0  # Base version
-    
-    def import_dat_file(self, dat_file_path: str) -> bool:
-        """Import a DAT file into the database.
-        
-        Args:
-            dat_file_path: Path to the DAT file
-            
-        Returns:
-            True if import was successful, False otherwise
-        """
-        try:
-            # Parse the DAT file
-            dat_data = self.parse_dat_file(dat_file_path)
-            if not dat_data:
-                return False
-            
-            # Add or update system
-            system_id = self.db_manager.add_system(
-                dat_data['system_name'],
-                dat_data['dat_file_path']
-            )
-            
-            # Clear existing games for this system
-            self.db_manager.clear_system_games(system_id)
-            
-            # Add games
-            for game_data in dat_data['games']:
-                game_data['system_id'] = system_id
-                self.db_manager.add_game(game_data)
-            
-            print(f"Successfully imported {len(dat_data['games'])} games from {dat_data['system_name']}")
-            return True
-            
-        except Exception as e:
-            print(f"Error importing DAT file {dat_file_path}: {e}")
-            return False
-    
-    def import_dat_folder(self, dat_folder: str) -> Tuple[int, int]:
-        """Import all DAT files from a folder.
-        
-        Args:
-            dat_folder: Path to folder containing DAT files
-            
-        Returns:
-            Tuple of (successful_imports, total_files)
-        """
-        dat_files = self.scan_dat_folder(dat_folder)
-        successful = 0
-        
-        for dat_file in dat_files:
-            if self.import_dat_file(dat_file):
-                successful += 1
-        
-        return successful, len(dat_files)

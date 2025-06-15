@@ -229,24 +229,26 @@ class RegionFilterWidget(QWidget):
     
     # Region flag SVG mapping
     REGION_FLAGS = {
+        # Priority regions in correct order
         'USA': 'us.svg',
-        'Europe': 'eu.svg', 
         'Japan': 'jp.svg',
+        'Europe': 'eu.svg', 
         'World': 'un.svg',  # Using UN flag for world
-        'Korea': 'kr.svg',
-        'China': 'cn.svg',
-        'Taiwan': 'tw.svg',
-        'Hong Kong': 'hk.svg',
+        'UK': 'gb.svg',
+        # Other regions in alphabetical order
         'Australia': 'au.svg',
         'Brazil': 'br.svg',
         'Canada': 'ca.svg',
+        'China': 'cn.svg',
         'France': 'fr.svg',
         'Germany': 'de.svg',
+        'Hong Kong': 'hk.svg',
         'Italy': 'it.svg',
-        'Spain': 'es.svg',
-        'UK': 'gb.svg',
+        'Korea': 'kr.svg',
         'Netherlands': 'nl.svg',
+        'Spain': 'es.svg',
         'Sweden': 'se.svg',
+        'Taiwan': 'tw.svg',
         'Unknown': 'xx.svg'  # Using unknown flag
     }
     
@@ -263,10 +265,19 @@ class RegionFilterWidget(QWidget):
             # Fallback to empty icon if SVG not found
             return QIcon()
     
-    def __init__(self, settings_manager=None, parent=None):
+    def __init__(self, settings_manager=None, system_id=None, parent=None):
         super().__init__(parent)
         self.settings_manager = settings_manager
+        self.current_system_id = system_id
+        self.all_known_regions = list(self.REGION_FLAGS.keys()) # Keep a list of all possible regions
         self.setup_ui()
+        self.load_region_settings() # Load settings after UI is set up
+
+        # Connect signals for drag/drop between lists - use consistent method names
+        self.available_list.item_dropped_from_external.connect(self._handle_drop_to_available)
+        self.ignored_list.item_dropped_from_external.connect(self._handle_drop_to_ignored)
+        self.available_list.items_reordered.connect(self.save_and_emit_changes)
+        self.ignored_list.items_reordered.connect(self.save_and_emit_changes)
         
     def setup_ui(self):
         """Set up the user interface."""
@@ -388,7 +399,7 @@ class RegionFilterWidget(QWidget):
         # Remove duplicates checkbox below ignored regions
         self.remove_duplicates_cb = QCheckBox("Remove Duplicate Games")
         self.remove_duplicates_cb.setChecked(False)  # Unchecked by default
-        self.remove_duplicates_cb.toggled.connect(self.filters_changed)
+        self.remove_duplicates_cb.toggled.connect(self.save_and_emit_changes) # Connect to save method
         right_column.addWidget(self.remove_duplicates_cb)
         
         # Add stretch to fill remaining space
@@ -397,24 +408,172 @@ class RegionFilterWidget(QWidget):
         main_content.addLayout(right_column)
         
         layout.addLayout(main_content)
+
+    def load_region_settings(self, emit_signal=True):
+        """Load region priority and ignored regions from settings for the current system."""
+        if self.settings_manager and self.current_system_id is not None:
+            priority = self.settings_manager.get_region_priority()
+            ignored = self.get_ignored_regions()
+            remove_duplicates = self.should_remove_duplicates()
+            
+            self.available_list.clear()
+            self.ignored_list.clear()
+            
+            # Populate available list (priority order)
+            for region in priority:
+                if region in self.all_known_regions:
+                    item = QListWidgetItem(self.get_flag_icon(region), region)
+                    self.available_list.addItem(item)
+            
+            # Populate ignored list
+            for region in ignored:
+                if region in self.all_known_regions:
+                    item = QListWidgetItem(self.get_flag_icon(region), region)
+                    self.ignored_list.addItem(item)
+            
+            # Add any remaining known regions to available if not in priority or ignored
+            current_listed_regions = set(priority + ignored)
+            for region in self.all_known_regions:
+                if region not in current_listed_regions:
+                    item = QListWidgetItem(self.get_flag_icon(region), region)
+                    self.available_list.addItem(item) # Add to end of available by default
+
+            self.remove_duplicates_cb.setChecked(remove_duplicates)
+        else:
+            # Default: use global region priority order if no system-specific settings
+            self.available_list.clear()
+            self.ignored_list.clear()
+            
+            if self.settings_manager:
+                # Use global region priority as default order
+                global_priority = self.settings_manager.get('region_priority', [])
+                
+                # Add regions in priority order first
+                for region in global_priority:
+                    if region in self.all_known_regions:
+                        item = QListWidgetItem(self.get_flag_icon(region), region)
+                        self.available_list.addItem(item)
+                
+                # Add any remaining regions not in priority list
+                priority_set = set(global_priority)
+                for region in self.all_known_regions:
+                    if region not in priority_set:
+                        item = QListWidgetItem(self.get_flag_icon(region), region)
+                        self.available_list.addItem(item)
+            else:
+                # Fallback: add all known regions in their natural order
+                for region in self.all_known_regions:
+                    item = QListWidgetItem(self.get_flag_icon(region), region)
+                    self.available_list.addItem(item)
+                    
+            self.remove_duplicates_cb.setChecked(False)
+
+    def save_region_settings(self):
+        """Save the current region filter configuration to settings."""
+        if self.settings_manager and self.current_system_id is not None:
+            priority = self.available_list.get_items()
+            ignored = self.ignored_list.get_items()
+            remove_duplicates = self.remove_duplicates_cb.isChecked()
+            
+            self.settings_manager.set_region_priority(priority)
+            # Note: ignored regions and remove_duplicates are UI state, not persisted settings
+
+    def save_and_emit_changes(self):
+        """Save settings and emit the filters_changed signal."""
+        self.save_region_settings()
+        self.filters_changed.emit()
+
+    def move_to_ignore(self):
+        """Move selected items from available to ignored list."""
+        selected_items = self.available_list.selectedItems()
+        for item in selected_items:
+            region_text = item.text()
+            # Remove from available list without emitting signal
+            for i in range(self.available_list.count()):
+                list_item = self.available_list.item(i)
+                if list_item and list_item.text() == region_text:
+                    self.available_list.takeItem(i)
+                    break
+            # Add to ignored list with icon
+            new_item = QListWidgetItem(self.get_flag_icon(region_text), region_text)
+            self.ignored_list.addItem(new_item)
+        self.save_and_emit_changes()
+
+    def move_to_available(self):
+        """Move selected items from ignored to available list."""
+        selected_items = self.ignored_list.selectedItems()
+        for item in selected_items:
+            region_text = item.text()
+            # Remove from ignored list without emitting signal
+            for i in range(self.ignored_list.count()):
+                list_item = self.ignored_list.item(i)
+                if list_item and list_item.text() == region_text:
+                    self.ignored_list.takeItem(i)
+                    break
+            # Add to available list with icon
+            new_item = QListWidgetItem(self.get_flag_icon(region_text), region_text)
+            self.available_list.addItem(new_item)
+        self.save_and_emit_changes()
+
+    def handle_drop_on_available(self, text: str, position: int):
+        """Handle item dropped onto the available list from ignored list."""
+        # Ensure it's removed from ignored list if it was there
+        self.ignored_list.remove_item(text)
+        # Add to available list at the specified position with icon
+        item = QListWidgetItem(self.get_flag_icon(text), text)
+        self.available_list.insertItem(position, item)
+        self.save_and_emit_changes()
+
+    def handle_drop_on_ignored(self, text: str, position: int):
+        """Handle item dropped onto the ignored list from available list."""
+        # Ensure it's removed from available list if it was there
+        self.available_list.remove_item(text)
+        # Add to ignored list at the specified position with icon
+        item = QListWidgetItem(self.get_flag_icon(text), text)
+        self.ignored_list.insertItem(position, item)
+        self.save_and_emit_changes()
+
+    def update_system(self, system_id: int):
+        """Update the filter for a new system ID."""
+        self.current_system_id = system_id
+        self.load_region_settings(emit_signal=False)
+        # Don't emit filters_changed here - on_system_changed will call apply_filters
         
-        # Connect signals
-        self.available_list.items_reordered.connect(self.filters_changed.emit)
-        self.ignored_list.items_reordered.connect(self.filters_changed.emit)
+        # Disconnect existing signals to prevent duplicates
+        try:
+            self.available_list.items_reordered.disconnect(self.save_and_emit_changes)
+            self.ignored_list.items_reordered.disconnect(self.save_and_emit_changes)
+            self.available_list.item_dropped_from_external.disconnect(self._handle_drop_to_available)
+            self.ignored_list.item_dropped_from_external.disconnect(self._handle_drop_to_ignored)
+            # Disconnect button signals
+            self.ignore_button.clicked.disconnect(self.move_to_ignore)
+            self.restore_button.clicked.disconnect(self.move_to_available)
+        except TypeError:
+            # Signals weren't connected yet, which is fine
+            pass
+        
+        # Connect signals - but don't emit during system change
+        self.available_list.items_reordered.connect(self.save_and_emit_changes)
+        self.ignored_list.items_reordered.connect(self.save_and_emit_changes)
         
         # Connect drag-drop signals for cross-list transfers
         self.available_list.item_dropped_from_external.connect(self._handle_drop_to_available)
         self.ignored_list.item_dropped_from_external.connect(self._handle_drop_to_ignored)
         
+        # Reconnect button signals
+        self.ignore_button.clicked.connect(self.move_to_ignore)
+        self.restore_button.clicked.connect(self.move_to_available)
+        
     def set_available_regions(self, regions: List[str]):
         """Set the available regions list with priority sorting from settings."""
         self.available_list.clear()
+        self.ignored_list.clear()  # Clear ignored regions to prevent cross-system contamination
         
         # Get region priority from settings or use default
         if self.settings_manager:
             priority_order = self.settings_manager.get('region_priority', [])
         else:
-            priority_order = ["USA", "Japan", "Europe", "World"]
+            priority_order = ["USA", "Japan", "Europe", "World", "UK"]
         
         # Sort regions by priority, then alphabetically for unlisted regions
         def sort_key(region):
@@ -454,6 +613,115 @@ class RegionFilterWidget(QWidget):
     def should_remove_duplicates(self) -> bool:
         """Check if duplicates should be removed."""
         return self.remove_duplicates_cb.isChecked()
+    
+    def set_region_priority(self, priority_list: List[str]):
+        """Set the region priority order (available regions)."""
+        # Clear current available list
+        self.available_list.clear()
+        
+        # Add regions in the specified order
+        for region in priority_list:
+            icon = self.get_flag_icon(region)
+            self.available_list.addItem(region)
+            new_item = self.available_list.item(self.available_list.count() - 1)
+            new_item.setIcon(icon)
+    
+    def set_ignored_regions(self, ignored_list: List[str]):
+        """Set the ignored regions list."""
+        # Clear current ignored list
+        self.ignored_list.clear()
+        
+        # Add ignored regions
+        for region in ignored_list:
+            icon = self.get_flag_icon(region)
+            self.ignored_list.addItem(region)
+            new_item = self.ignored_list.item(self.ignored_list.count() - 1)
+            new_item.setIcon(icon)
+    
+    def set_remove_duplicates(self, remove_duplicates: bool):
+        """Set the remove duplicates checkbox state."""
+        self.remove_duplicates_cb.setChecked(remove_duplicates)
+
+    def reset_preferred_regions(self):
+        """Reset preferred regions to all available regions, maintaining their current order in available_list."""
+        # This method assumes available_list is already populated by set_available_regions
+        # No direct action needed here if set_available_regions correctly populates the list
+        # and it's intended to be the default preferred order.
+        # If a different default order is needed, it should be implemented here.
+        # For now, we'll assume set_available_regions handles the default state correctly.
+        # If the available_list itself needs to be repopulated from a master list of all possible regions:
+        # self.set_available_regions(self.master_region_list_if_any) # Requires master_region_list
+        if emit_signal:
+            self.filters_changed.emit() # Emit signal as the state might be considered 'reset'
+
+    def set_preferred_to_available(self):
+        """Sets the preferred regions list to match the current available_list content and order."""
+        # This is effectively what set_available_regions does if it's called with all unique regions from DAT.
+        # If available_list is already the source of truth for preferred order, no specific action here
+        # beyond ensuring it's correctly populated by update_filter_options -> set_available_regions.
+        # This method is a placeholder for clarity in main_window.py logic.
+        # Actual repopulation of preferred (available_list) happens in set_available_regions.
+        self.filters_changed.emit()
+
+    def reset_ignored_regions(self):
+        """Clear all regions from the ignored list."""
+        self.ignored_list.clear()
+        self.filters_changed.emit()
+    
+    def rebuild_available_list(self, all_regions_from_dat: List[str]):
+        """Rebuild the available regions list, preserving existing order and adding new DAT regions."""
+        # Get the set of currently displayed available regions (maintaining their order is implicit
+        # as we only append new ones)
+        existing_available_texts = set()
+        for i in range(self.available_list.count()):
+            existing_available_texts.add(self.available_list.item(i).text())
+
+        # Get the set of ignored regions from the UI list
+        ignored_texts = set()
+        for i in range(self.ignored_list.count()):
+            ignored_texts.add(self.ignored_list.item(i).text())
+
+        # Determine new regions from the DAT that are not already in available or ignored lists
+        new_regions_to_add = []
+        all_regions_from_dat_set = set(all_regions_from_dat)
+
+        for region in all_regions_from_dat_set:
+            if region not in existing_available_texts and region not in ignored_texts:
+                new_regions_to_add.append(region)
+        
+        # Sort new regions according to priority order: top priority regions first, then others alphabetically
+        priority_order = ["USA", "Japan", "Europe", "World", "UK"]
+        
+        # Separate new regions into priority and non-priority groups
+        priority_regions = []
+        other_regions = []
+        
+        for region in new_regions_to_add:
+            if region in priority_order:
+                priority_regions.append(region)
+            else:
+                other_regions.append(region)
+        
+        # Sort priority regions by their position in priority_order
+        priority_regions.sort(key=lambda x: priority_order.index(x) if x in priority_order else len(priority_order))
+        
+        # Sort other regions alphabetically
+        other_regions.sort()
+        
+        # Add regions in correct order: priority regions first, then alphabetical
+        for region in priority_regions + other_regions:
+            icon = self.get_flag_icon(region)
+            self.available_list.addItem(region)
+            new_item = self.available_list.item(self.available_list.count() - 1)
+            new_item.setIcon(icon)
+        
+        # Ensure all items in available_list have icons (might be redundant if set_region_priority handles it)
+        # This also helps if items were moved from ignored_list without icons being set immediately.
+        for i in range(self.available_list.count()):
+            item = self.available_list.item(i)
+            if not item.icon(): # Add icon if missing
+                icon = self.get_flag_icon(item.text())
+                item.setIcon(icon)
         
     def move_to_ignore(self):
         """Move selected items from available to ignored list."""
@@ -465,7 +733,7 @@ class RegionFilterWidget(QWidget):
             new_item = self.ignored_list.item(self.ignored_list.count() - 1)
             new_item.setIcon(icon)
             self.available_list.takeItem(self.available_list.row(item))
-        self.filters_changed.emit()
+        self.save_and_emit_changes()
     
     def move_to_available(self):
         """Move selected items from ignored to available list."""
@@ -477,7 +745,7 @@ class RegionFilterWidget(QWidget):
             new_item = self.available_list.item(self.available_list.count() - 1)
             new_item.setIcon(icon)
             self.ignored_list.takeItem(self.ignored_list.row(item))
-        self.filters_changed.emit()
+        self.save_and_emit_changes()
     
     def _handle_drop_to_available(self, item_text: str, position: int = -1):
         """Handle dropping an item to the available list."""
@@ -496,8 +764,12 @@ class RegionFilterWidget(QWidget):
             self.available_list.addItem(item_text)
             new_item = self.available_list.item(self.available_list.count() - 1)
         new_item.setIcon(icon)
-        self.filters_changed.emit()
+        self.save_and_emit_changes()
     
+    def get_available_regions_list(self) -> List[str]:
+        """Returns the current list of items in the available regions list."""
+        return [self.available_list.item(i).text() for i in range(self.available_list.count())]
+
     def _handle_drop_to_ignored(self, item_text: str, position: int = -1):
         """Handle dropping an item to the ignored list."""
         # Remove from available list if it exists there
@@ -516,4 +788,4 @@ class RegionFilterWidget(QWidget):
             self.ignored_list.addItem(item_text)
             new_item = self.ignored_list.item(self.ignored_list.count() - 1)
         new_item.setIcon(icon)
-        self.filters_changed.emit()
+        self.save_and_emit_changes()

@@ -6,12 +6,13 @@ Provides the primary user interface for ROM collection management.
 """
 
 import os
+import shutil
 from pathlib import Path
 from typing import Dict, Any, List, Optional
 
 from PyQt6.QtWidgets import (
     QMainWindow, QWidget, QVBoxLayout, QHBoxLayout, QSplitter,
-    QTreeWidget, QTreeWidgetItem, QComboBox, QLabel, QPushButton,
+    QTreeWidget, QTreeWidgetItem, QTreeWidgetItemIterator, QComboBox, QLabel, QPushButton,
     QProgressBar, QStatusBar, QMenuBar, QMenu, QFileDialog,
     QMessageBox, QGroupBox, QCheckBox, QListWidget, QListWidgetItem,
     QTabWidget, QTextEdit, QSpinBox, QLineEdit, QScrollArea, QApplication
@@ -50,21 +51,37 @@ from ui.drag_drop_list import DragDropListWidget, RegionFilterWidget
 class DATImportThread(QThread):
     """Thread for importing DAT files."""
     
-    progress = pyqtSignal(int, int)  # current, total
-    finished = pyqtSignal(int, int)  # successful, total
+    progress = pyqtSignal(int, int)  # current file, total files
+    file_progress = pyqtSignal(str, int, int) # current_file_name, current_game_in_file, total_games_in_file
+    finished = pyqtSignal(int, int)  # successful files, total files
     error = pyqtSignal(str)
     
-    def __init__(self, dat_processor: DATProcessor, dat_folder: str):
+    def __init__(self, dat_processor: DATProcessor, dat_file_paths: list[str]):
         super().__init__()
         self.dat_processor = dat_processor
-        self.dat_folder = dat_folder
+        self.dat_file_paths = dat_file_paths
     
     def run(self):
-        try:
-            successful, total = self.dat_processor.import_dat_folder(self.dat_folder)
-            self.finished.emit(successful, total)
-        except Exception as e:
-            self.error.emit(str(e))
+        total_files = len(self.dat_file_paths)
+        successful_files = 0
+        for i, file_path in enumerate(self.dat_file_paths):
+            self.progress.emit(i + 1, total_files)
+            try:
+                # Assuming dat_processor will have a method to import a single DAT file
+                # and potentially a way to report progress within that file.
+                # For now, we'll assume import_dat_file returns True on success.
+                # This method will need to be created or adapted in DATProcessor.
+                def single_file_progress_callback(current_game, total_games):
+                    self.file_progress.emit(Path(file_path).name, current_game, total_games)
+                
+                # Modify DATProcessor to accept this callback in import_dat_file
+                if self.dat_processor.import_dat_file(file_path, progress_callback=single_file_progress_callback):
+                    successful_files += 1
+            except Exception as e:
+                # Emit an error for this specific file, or collect errors
+                print(f"Error importing {file_path}: {e}") # Log or handle more gracefully
+                # Optionally, emit a specific error signal per file or accumulate
+        self.finished.emit(successful_files, total_files)
 
 class ROMScanThread(QThread):
     """Thread for scanning ROM folders."""
@@ -107,6 +124,7 @@ class MainWindow(QMainWindow):
         
         self.current_system_id = None
         self.current_scan_results = []
+        self.ignored_crcs = set()  # Initialize as an empty set
         
         self.apply_adobe_theme()
         self.setup_ui()
@@ -408,7 +426,7 @@ class MainWindow(QMainWindow):
         # Action buttons with premium styling
         self.scan_button = QPushButton("📂 Scan ROM Folder")
         self.scan_button.setObjectName("premium_button")
-        self.scan_button.clicked.connect(self.scan_rom_folder)
+        self.scan_button.clicked.connect(lambda: self.scan_rom_folder(prompt_for_folder=True))
         controls_layout.addWidget(self.scan_button)
         
         self.import_dat_button = QPushButton("📥 Import DAT Files")
@@ -511,6 +529,8 @@ class MainWindow(QMainWindow):
         self.missing_tree.setColumnWidth(0, 50)  # # column
         self.missing_tree.setColumnWidth(1, 300)  # Game name column
         self.missing_tree.setSelectionMode(QTreeWidget.SelectionMode.ExtendedSelection)  # Allow multiple selection
+        self.missing_tree.setContextMenuPolicy(Qt.ContextMenuPolicy.CustomContextMenu)
+        self.missing_tree.customContextMenuRequested.connect(self.show_missing_tree_context_menu)
         missing_layout.addWidget(self.missing_tree)
         
         # Unrecognized ROMs tab
@@ -548,12 +568,34 @@ class MainWindow(QMainWindow):
         self.broken_tree.setColumnWidth(1, 300)  # Filename column
         self.broken_tree.setSelectionMode(QTreeWidget.SelectionMode.ExtendedSelection)
         broken_layout.addWidget(self.broken_tree)
+
+        # Ignored ROMs tab
+        ignored_tab = QWidget()
+        ignored_layout = QVBoxLayout(ignored_tab)
+
+        # Ignored ROMs tree
+        self.ignored_tree = QTreeWidget()
+        self.ignored_tree.setHeaderLabels([
+            "#", "Game Name", "Region", "Language", "CRC32"
+        ])
+        self.ignored_tree.setAlternatingRowColors(True)
+        self.ignored_tree.setSortingEnabled(True)
+        self.ignored_tree.setMinimumHeight(250)  # Reduced height
+        self.ignored_tree.setMaximumHeight(300)  # Prevent excessive growth
+        self.ignored_tree.setColumnWidth(0, 50)  # # column
+        self.ignored_tree.setColumnWidth(1, 300)  # Game name column
+        self.ignored_tree.setSelectionMode(QTreeWidget.SelectionMode.ExtendedSelection)  # Allow multiple selection
+        self.ignored_tree.setContextMenuPolicy(Qt.ContextMenuPolicy.CustomContextMenu)
+        self.ignored_tree.customContextMenuRequested.connect(self.show_ignored_tree_context_menu)
+        ignored_layout.addWidget(self.ignored_tree)
         
         # Add tabs to the tab widget
-        self.rom_tabs.addTab(correct_tab, "Correct ROMs")
-        self.rom_tabs.addTab(missing_tab, "Missing ROMs")
-        self.rom_tabs.addTab(unrecognized_tab, "Unrecognized ROMs")
-        self.rom_tabs.addTab(broken_tab, "Broken ROMs")
+        self.rom_tabs.addTab(correct_tab, "✔️ Correct")
+        self.rom_tabs.addTab(missing_tab, "❓ Missing")
+        # Add Ignored ROMs tab using its parent widget (the QWidget 'ignored_tab' we created)
+        self.rom_tabs.addTab(ignored_tab, "🚫 Ignored") 
+        self.rom_tabs.addTab(unrecognized_tab, "⚠️ Unrecognized")
+        self.rom_tabs.addTab(broken_tab, "💔 Broken")
         layout.addWidget(self.rom_tabs)
         
         # Stats with detailed feedback
@@ -563,6 +605,97 @@ class MainWindow(QMainWindow):
         
         return panel
     
+    def show_missing_tree_context_menu(self, position):
+        menu = QMenu()
+        move_to_ignore_action = menu.addAction("Move to Ignore List")
+        action = menu.exec(self.missing_tree.mapToGlobal(position))
+        if action == move_to_ignore_action:
+            self.move_selected_to_ignore_list()
+
+    def show_ignored_tree_context_menu(self, position):
+        menu = QMenu()
+        unignore_action = menu.addAction("Remove from Ignore List (Unignore)")
+        action = menu.exec(self.ignored_tree.mapToGlobal(position))
+        if action == unignore_action:
+            self.unignore_selected_items()
+
+    def move_selected_to_ignore_list(self):
+        selected_items = self.missing_tree.selectedItems()
+        if not selected_items: return
+
+        moved_crcs = []
+        items_to_remove_from_missing = []
+
+        for item in selected_items:
+            # Assuming CRC32 is in the 5th column (index 4)
+            crc32 = item.text(4) 
+            if crc32 and crc32 not in self.ignored_crcs:
+                self.ignored_crcs.add(crc32)
+                moved_crcs.append(crc32)
+                
+                # Prepare item for ignored_tree
+                cloned_item_texts = [item.text(i) for i in range(item.columnCount())]
+                new_ignored_item = NumericTreeWidgetItem(cloned_item_texts)
+                # If UserRole had original game data, you might want to transfer it
+                # game_data = item.data(0, Qt.ItemDataRole.UserRole) # Example if it was set
+                # if game_data: new_ignored_item.setData(0, Qt.ItemDataRole.UserRole, game_data)
+                self.ignored_tree.addTopLevelItem(new_ignored_item)
+                items_to_remove_from_missing.append(item)
+
+        if moved_crcs:
+            # Remove items from missing_tree (iterate backwards if removing by index)
+            for item in items_to_remove_from_missing:
+                self.missing_tree.takeTopLevelItem(self.missing_tree.indexOfTopLevelItem(item))
+            
+            self.settings_manager.set_ignored_crcs(list(self.ignored_crcs), self.current_system_id)
+            self.update_rom_stats()
+            self.apply_filters() # This should re-populate DAT and missing, excluding newly ignored
+
+    def unignore_selected_items(self):
+        selected_items = self.ignored_tree.selectedItems()
+        if not selected_items: return
+
+        unignored_crcs = []
+        items_to_remove_from_ignored = []
+
+        for item in selected_items:
+            # Assuming CRC32 is in the 5th column (index 4)
+            crc32 = item.text(4)
+            if crc32 and crc32 in self.ignored_crcs:
+                self.ignored_crcs.remove(crc32)
+                unignored_crcs.append(crc32)
+                items_to_remove_from_ignored.append(item)
+        
+        if unignored_crcs:
+            for item in items_to_remove_from_ignored:
+                self.ignored_tree.takeTopLevelItem(self.ignored_tree.indexOfTopLevelItem(item))
+            
+            self.settings_manager.set_ignored_crcs(list(self.ignored_crcs), self.current_system_id)
+            self.update_rom_stats()
+            self.apply_filters() # This will re-evaluate DAT and missing lists
+
+    def populate_ignored_tree(self):
+        """Populate the ignored ROMs tree based on self.ignored_crcs."""
+        self.ignored_tree.clear()
+        if not self.all_games or not self.ignored_crcs:
+            return
+
+        row_number = 0
+        for crc in self.ignored_crcs:
+            game_details = next((g for g in self.all_games if g.get('crc32') == crc), None)
+            if game_details:
+                row_number += 1
+                item = NumericTreeWidgetItem([
+                    str(row_number),
+                    game_details['major_name'],
+                    game_details.get('region', ''),
+                    game_details.get('languages', ''),
+                    game_details['crc32']
+                ])
+                item.setData(0, Qt.ItemDataRole.UserRole, row_number) # For sorting
+                self.ignored_tree.addTopLevelItem(item)
+        self.ignored_tree.sortItems(0, Qt.SortOrder.AscendingOrder)
+
     def create_bottom_panel(self) -> QWidget:
         """Create the bottom panel with filters and actions."""
         panel = QWidget()
@@ -856,6 +989,10 @@ class MainWindow(QMainWindow):
         if not system_name:
             return
         
+        # Save current filter settings for the previous system
+        if hasattr(self, 'current_system_id') and self.current_system_id is not None:
+            self.save_current_filter_settings()
+        
         # Save selection
         self.settings_manager.set("last_selected_system", system_name)
         self.settings_manager.save_settings()
@@ -875,6 +1012,14 @@ class MainWindow(QMainWindow):
         # Load DAT games and update filters
         self.load_dat_games()
         self.update_filter_options()
+        
+        # Restore filter settings for the new system
+        self.restore_filter_settings()
+
+        # Load ignored CRCs for the current system
+        self.ignored_crcs = set(self.settings_manager.get_ignored_crcs(self.current_system_id))
+        self.populate_ignored_tree()
+        
         self.apply_filters()
         
         # Check if there are existing scan results in database for this system
@@ -899,8 +1044,9 @@ class MainWindow(QMainWindow):
         
         # Store all games for filtering
         self.all_games = self.db_manager.get_games_by_system(self.current_system_id)
-        
-        # Initial display of all games
+        self.all_games = [game for game in self.all_games if game.get('crc32') not in self.ignored_crcs]
+
+        # Initial display of all games (excluding ignored)
         self.dat_tree.clear()
         for i, game in enumerate(self.all_games, 1):
             item = NumericTreeWidgetItem([
@@ -926,33 +1072,46 @@ class MainWindow(QMainWindow):
         self.dat_stats_label.setText(f"<b>Total:</b> {total_count} | <b>Filtered out:</b> 0 | <b>Showing:</b> {total_count}")
     
     def import_dat_files(self):
-        """Import DAT files from folder."""
+        """Import selected DAT files."""
         dat_folder = self.settings_manager.get_dat_folder_path()
         if not dat_folder:
+            # If no last DAT folder, default to home directory or a sensible default
             dat_folder = str(Path.home())
         
-        folder = QFileDialog.getExistingDirectory(
-            self, "Select DAT Folder", dat_folder
+        # Open file dialog to select one or more DAT files
+        file_paths, _ = QFileDialog.getOpenFileNames(
+            self,
+            "Select DAT Files to Import",
+            dat_folder,  # Initial directory
+            "DAT Files (*.dat);;All Files (*)"  # Filter for .dat files
         )
         
-        if folder:
-            self.settings_manager.set_dat_folder_path(folder)
-            self.settings_manager.save_settings()
+        if file_paths:
+            # Save the directory of the first selected file as the new default DAT folder
+            if file_paths:
+                new_dat_folder = str(Path(file_paths[0]).parent)
+                self.settings_manager.set_dat_folder_path(new_dat_folder)
+                self.settings_manager.save_settings()
             
-            # Start import in background thread
-            self.import_thread = DATImportThread(self.dat_processor, folder)
+            # Start import in background thread with the list of file paths
+            self.import_thread = DATImportThread(self.dat_processor, file_paths)
+            self.import_thread.progress.connect(self._on_dat_overall_import_progress) # Overall file progress
+            self.import_thread.file_progress.connect(self._on_dat_file_import_progress) # Game progress within a file
             self.import_thread.finished.connect(self.on_import_finished)
             self.import_thread.error.connect(self.on_import_error)
             
             self.progress_bar.setVisible(True)
-            self.progress_bar.setRange(0, 0)  # Indeterminate
-            self.status_bar.showMessage("Importing DAT files...")
+            self.progress_bar.setRange(0, len(file_paths)) # For overall file progress
+            self.progress_bar.setValue(0)
+            self.status_bar.showMessage(f"Starting import of {len(file_paths)} DAT file(s)...")
             
             self.import_thread.start()
     
     def on_import_finished(self, successful: int, total: int):
         """Handle DAT import completion."""
         self.progress_bar.setVisible(False)
+        self.progress_bar.setRange(0,1) # Reset progress bar after completion
+        self.progress_bar.setValue(1)
         self.status_bar.showMessage(f"Imported {successful}/{total} DAT files")
         
         # Reload systems
@@ -977,74 +1136,129 @@ class MainWindow(QMainWindow):
             self, "Import Error",
             f"Error importing DAT files:\n{error_message}"
         )
+
+    def _on_dat_overall_import_progress(self, current_file_num: int, total_files: int):
+        """Update progress for overall DAT file import."""
+        self.progress_bar.setRange(0, total_files)
+        self.progress_bar.setValue(current_file_num)
+        # Status message for overall progress is handled by _on_dat_file_import_progress or initial message
+
+    def _on_dat_file_import_progress(self, file_name: str, current_game: int, total_games: int):
+        """Update status for game import progress within a single DAT file."""
+        if total_games > 0: # Avoid division by zero if a DAT is empty or unparseable
+            percentage = int((current_game / total_games) * 100)
+            self.status_bar.showMessage(f"Processing {file_name}: {current_game}/{total_games} games ({percentage}%)...")
+        else:
+            self.status_bar.showMessage(f"Processing {file_name} (0 games)..." )
     
-    def scan_rom_folder(self):
+    def _start_rom_scan_process(self, folder_to_scan: str, system_id: str):
+        """Internal method to initiate the ROM scan with a progress dialog."""
+        self.settings_manager.add_system_rom_folder(system_id, folder_to_scan)
+        self.settings_manager.save_settings()
+
+        # Use the custom ProgressDialog from ui.progress_dialog
+        self.scan_progress_dialog = ProgressDialog(title="Scanning ROMs...", parent=self)
+        self.scan_progress_dialog.status_label.setText("Scanning in progress, please wait.")
+        self.scan_progress_dialog.cancel_button.setEnabled(False) # Or True if you implement cancellation
+        self.scan_progress_dialog.setModal(True)
+        self.scan_progress_dialog.set_progress(0) # Start at 0%
+
+        self.scan_thread = ROMScanThread(self.rom_scanner, folder_to_scan, system_id)
+        self.scan_thread.progress.connect(self.on_scan_progress)
+        self.scan_thread.finished.connect(self.on_scan_finished)
+        self.scan_thread.error.connect(self.on_scan_error)
+
+        self.progress_bar.setVisible(True) # Main window progress bar can still be used
+        self.progress_bar.setRange(0, 0)   # Set to indeterminate initially
+        self.status_bar.showMessage(f"Scanning folder: {Path(folder_to_scan).name}...")
+
+        self.scan_thread.start()
+        self.scan_progress_dialog.exec() # Show modally and block until accepted or rejected
+
+    def scan_rom_folder(self, prompt_for_folder=True):
         """Scan ROM folder for current system."""
         if not self.current_system_id:
-            QMessageBox.warning(
-                self, "No System Selected",
-                "Please select a system first."
-            )
+            QMessageBox.warning(self, "No System Selected", "Please select a system first.")
             return
-        
-        # Get previously used folder for this system, if any
+
         system_folders = self.settings_manager.get_system_rom_folders(str(self.current_system_id))
-        default_folder = system_folders[0] if system_folders else str(Path.home())
-        
-        folder = QFileDialog.getExistingDirectory(
-            self, "Select ROM Folder", default_folder
-        )
-        
-        if folder:
-            # Save the folder path for this system
-            self.settings_manager.add_system_rom_folder(str(self.current_system_id), folder)
-            self.settings_manager.save_settings()
-            
-            # Start scan in background thread
-            self.scan_thread = ROMScanThread(
-                self.rom_scanner, folder, self.current_system_id
-            )
-            self.scan_thread.progress.connect(self.on_scan_progress)
-            self.scan_thread.finished.connect(self.on_scan_finished)
-            self.scan_thread.error.connect(self.on_scan_error)
-            
-            self.progress_bar.setVisible(True)
-            self.progress_bar.setRange(0, 100)
-            self.status_bar.showMessage("Scanning ROM folder...")
-            
-            self.scan_thread.start()
+        folder_to_scan = None
+
+        if prompt_for_folder:
+            # Manual scan mode (from button): always prompt for a folder.
+            default_folder_path = system_folders[0] if system_folders and Path(system_folders[0]).is_dir() else str(Path.home())
+            selected_folder = QFileDialog.getExistingDirectory(self, "Select ROM Folder", default_folder_path)
+            if selected_folder:
+                folder_to_scan = selected_folder
+            else:
+                self.status_bar.showMessage("Scan cancelled: No folder selected.")
+                return
+        else:
+            # Automatic rescan mode (e.g., after moving broken files).
+            # Use existing folder if valid, otherwise prompt (initial setup for system).
+            if system_folders and Path(system_folders[0]).is_dir():
+                folder_to_scan = system_folders[0]
+            else:
+                current_system_name = self.systems_combo.currentText()
+                QMessageBox.information(self, "Initial Folder Setup", 
+                                        f"No ROM folder is currently set for the system '{current_system_name}'. "
+                                        f"Please select a folder to scan.")
+                default_folder_path = str(Path.home())
+                selected_folder = QFileDialog.getExistingDirectory(self, f"Select ROM Folder for {current_system_name}", default_folder_path)
+                if selected_folder:
+                    folder_to_scan = selected_folder
+                else:
+                    self.status_bar.showMessage("Scan cancelled: No folder selected for system setup.")
+                    return
+
+        if folder_to_scan:
+            self._start_rom_scan_process(folder_to_scan, str(self.current_system_id))
+        # If folder_to_scan is None here, it means the user cancelled a dialog, and a message was already shown.
+
+    def rescan_current_rom_folder(self):
+        """Automatically rescans the current system's ROM folder."""
+        self.scan_rom_folder(prompt_for_folder=False)
     
     def on_scan_progress(self, current: int, total: int):
-        """Handle scan progress update."""
-        if total > 0:
-            progress = int((current / total) * 100)
-            self.progress_bar.setValue(progress)
+        """Handle scan progress update for both dialog and main progress bar."""
+        if hasattr(self, 'scan_progress_dialog') and self.scan_progress_dialog.isVisible():
+            if total > 0:
+                progress_percentage = int((current / total) * 100)
+                self.scan_progress_dialog.set_progress(progress_percentage)
+                self.scan_progress_dialog.set_status(f"Scanning: {current}/{total} items...")
+                # Update main progress bar as well
+                self.progress_bar.setRange(0, 100) # Assuming percentage for main bar
+                self.progress_bar.setValue(progress_percentage)
+            else: # Indeterminate state
+                self.scan_progress_dialog.set_progress(0) # Or handle indeterminate in ProgressDialog
+                self.scan_progress_dialog.set_status("Scanning...")
+                self.progress_bar.setRange(0, 0) # Indeterminate for main bar
+        else: # Fallback if dialog is not active (should not happen with modal dialog)
+            if total > 0:
+                progress = int((current / total) * 100)
+                self.progress_bar.setRange(0, 100)
+                self.progress_bar.setValue(progress)
+            else:
+                self.progress_bar.setRange(0, 0)
     
     def on_scan_finished(self, results: List[ROMScanResult]):
         """Handle scan completion."""
+        if hasattr(self, 'scan_progress_dialog') and self.scan_progress_dialog.isVisible():
+            self.scan_progress_dialog.accept() # Close the modal dialog
+
         self.progress_bar.setVisible(False)
         self.current_scan_results = results
         
-        # Store scan results in database for persistent filtering
         if self.current_system_id:
             self.scanned_roms_manager.store_scan_results(self.current_system_id, results)
         
-        # Update ROM tree
         self.update_correct_roms()
-        
-        # Update missing ROMs tab
         self.update_missing_roms()
-        
-        # Update unrecognized and broken ROM tabs (they will use database now)
         self.update_unrecognized_roms()
         self.update_broken_roms()
-        
-        # Update stats using the proper ROM stats method
         self.update_rom_stats()
         
-        self.status_bar.showMessage(f"Scanned {len(results)} files")
-        
-        # Switch to the Correct ROMs tab
+        self.status_bar.showMessage(f"Scan complete. Found {len(results)} relevant files.")
         self.rom_tabs.setCurrentIndex(0)
     
     def clear_rom_data(self):
@@ -1101,12 +1315,15 @@ class MainWindow(QMainWindow):
     
     def on_scan_error(self, error_message: str):
         """Handle scan error."""
+        if hasattr(self, 'scan_progress_dialog') and self.scan_progress_dialog.isVisible():
+            self.scan_progress_dialog.reject() # Close the modal dialog
+
         self.progress_bar.setVisible(False)
         self.status_bar.showMessage("Scan failed")
         
         QMessageBox.critical(
             self, "Scan Error",
-            f"Error scanning ROM folder:\n{error_message}"
+            f"An error occurred during scanning:\n{error_message}"
         )
     
 
@@ -1135,8 +1352,8 @@ class MainWindow(QMainWindow):
         if hasattr(self, 'scanned_roms_manager') and self.scanned_roms_manager.get_all_scanned_roms(current_system_id):
             all_scanned_roms = self.scanned_roms_manager.get_all_scanned_roms(current_system_id)
             for rom_data in all_scanned_roms:
-                # Only include correct ROMs
-                if rom_data['status'] == 'correct':
+                # Include correct ROMs and ROMs with wrong filenames (they have correct CRC)
+                if rom_data['status'] in ['correct', 'wrong_filename']:
                     matched_crc32 = rom_data.get('matched_game_crc32')
                     # Only show if the matched game is visible in current filters
                     if matched_crc32 and matched_crc32 in visible_crcs:
@@ -1145,9 +1362,16 @@ class MainWindow(QMainWindow):
                         if game_details:
                             correct_games.append(game_details)
                             row_number += 1
+                            
+                            # For wrong filename ROMs, show the actual filename instead of DAT name
+                            if rom_data['status'] == 'wrong_filename':
+                                display_name = Path(rom_data['file_path']).stem  # Show actual filename without extension
+                            else:
+                                display_name = game_details['major_name']  # Show DAT name for correct ROMs
+                            
                             item = NumericTreeWidgetItem([
                                 str(row_number),  # Display without leading zeros
-                                game_details['major_name'],
+                                display_name,
                                 game_details.get('region', ''),
                                 game_details.get('languages', ''),
                                 game_details['crc32']
@@ -1157,17 +1381,24 @@ class MainWindow(QMainWindow):
                             self.correct_tree.addTopLevelItem(item)
         elif hasattr(self, 'current_scan_results') and self.current_scan_results:
             for result in self.current_scan_results:
-                # Only include correct ROMs
-                if result.status.value == 'correct' and result.matched_game:
+                # Include correct ROMs and ROMs with wrong filenames (they have correct CRC)
+                if result.status.value in ['correct', 'wrong_filename'] and result.matched_game:
                     matched_crc32 = result.matched_game.get('crc32')
                     # Only show if the matched game is visible in current filters
                     if matched_crc32 and matched_crc32 in visible_crcs:
                         game_details = result.matched_game
                         correct_games.append(game_details)
                         row_number += 1
+                        
+                        # For wrong filename ROMs, show the actual filename instead of DAT name
+                        if result.status.value == 'wrong_filename':
+                            display_name = Path(result.file_path).stem  # Show actual filename without extension
+                        else:
+                            display_name = game_details['major_name']  # Show DAT name for correct ROMs
+                        
                         item = NumericTreeWidgetItem([
                             str(row_number),  # Display without leading zeros
-                            game_details['major_name'],
+                            display_name,
                             game_details.get('region', ''),
                             game_details.get('languages', ''),
                             game_details['crc32']
@@ -1216,10 +1447,10 @@ class MainWindow(QMainWindow):
             visible_games.append((game_name, crc32))
         
         # Iterate through games currently visible in the DAT tree
-        # and check if they are missing from the scan results.
+        # and check if they are missing from the scan results AND not in the ignore list.
         row_number = 0
         for game_name, crc32 in visible_games:
-            if crc32 and crc32 not in matched_crcs:
+            if crc32 and crc32 not in matched_crcs and crc32 not in self.ignored_crcs:
                 # Find the full game details from self.all_games for display
                 # This assumes crc32 is unique enough for a quick lookup if needed,
                 # or that visible_games could store more complete game objects.
@@ -1371,6 +1602,12 @@ class MainWindow(QMainWindow):
                 filtered_out += 1
                 continue
             
+            # Check if game is in ignored list
+            game_crc = game.get('crc32', '')
+            if game_crc in self.ignored_crcs:
+                filtered_out += 1
+                continue
+            
             # Game passes all filters, add to tree
             showing += 1
             item = NumericTreeWidgetItem([
@@ -1412,6 +1649,9 @@ class MainWindow(QMainWindow):
             
             # Force UI update to ensure all trees refresh
             QApplication.processEvents()
+
+        # Save the current filter settings for this system
+        self.save_current_filter_settings()
     
     def update_unrecognized_roms(self, results: List[ROMScanResult] = None):
         """Update the unrecognized ROMs tab with ROMs that are not in the DAT.
@@ -1528,89 +1768,193 @@ class MainWindow(QMainWindow):
         
         total_dat_games = len(visible_crcs)
         
-        # Prioritize memory results over database results
-        if hasattr(self, 'current_scan_results') and self.current_scan_results:
-            # Use memory results
-            system_results = [r for r in self.current_scan_results if r.system_id == current_system_id]
+        system_results_dicts = []
+        if hasattr(self, 'scanned_roms_manager'):
+            system_results_dicts = self.scanned_roms_manager.get_all_scanned_roms(current_system_id)
             
-            if not system_results:
-                self.rom_stats_label.setText(f"<b>Total DAT:</b> {total_dat_games} | <b>Matching:</b> 0 | <b>Missing:</b> {total_dat_games} | <b>Unrecognised:</b> 0 | <b>Broken:</b> 0 | <b>Total ROMs:</b> 0")
-                return
-            
-            matching_count = 0
+        if not system_results_dicts:
+            # Try current_scan_results as a fallback if DB is empty or manager not fully ready
+            if hasattr(self, 'current_scan_results') and self.current_scan_results:
+                # Convert ROMScanResult objects to dicts for consistent processing
+                system_results_dicts = [
+                    {
+                        'system_id': r.system_id,
+                        'file_path': r.file_path,
+                        'file_size': r.file_size,
+                        'calculated_crc32': r.calculated_crc32,
+                        'status': r.status.value if isinstance(r.status, ROMStatus) else r.status, # Handle ROMStatus enum or string
+                        'matched_game': r.matched_game, # This is already a dict
+                        'matched_game_crc32': r.matched_game.get('crc32') if r.matched_game else None, # Extract CRC from matched_game dict
+                        'similarity_score': getattr(r, 'similarity_score', None),
+                        'error_message': getattr(r, 'error_message', None)
+                    }
+                    for r in self.current_scan_results if r.system_id == current_system_id
+                ]
+
+        matching_count = 0
+        missing_count = total_dat_games 
+        unrecognised_count = 0
+        broken_count = 0
+        total_roms = 0
+
+        if system_results_dicts:
+            current_unrecognised = 0
+            current_broken = 0
             matched_crcs = set()
-            unrecognised_count = 0
-            broken_count = 0
+
+            for result_dict in system_results_dicts:
+                status_val = result_dict.get('status')
+                if status_val == ROMStatus.NOT_RECOGNIZED.value or status_val == 'not_recognized':
+                    current_unrecognised += 1
+                elif status_val == ROMStatus.BROKEN.value or status_val == 'broken':
+                    current_broken += 1
+                elif status_val == ROMStatus.CORRECT.value or status_val == 'correct' or \
+                     status_val == ROMStatus.WRONG_FILENAME.value or status_val == 'wrong_filename':
+                    rom_crc = result_dict.get('matched_game_crc32') 
+                    if rom_crc and rom_crc in visible_crcs:
+                        matched_crcs.add(rom_crc)
             
-            # First count all ROMs by status (independent of filtering)
-            for result in system_results:
-                if result.status == 'not_recognized':
-                    unrecognised_count += 1
-                elif result.status == 'broken':
-                    broken_count += 1
-                elif result.status == 'correct' or result.status == 'wrong_filename':
-                    # For matching ROMs, collect unique CRC32s that are in the filtered DAT
-                    if result.matched_game and 'crc32' in result.matched_game:
-                        rom_crc = result.matched_game['crc32']
-                        if rom_crc in visible_crcs:
-                            matched_crcs.add(rom_crc)
-            
-            # Matching count is the number of unique CRC32s matched (same logic as missing count)
             matching_count = len(matched_crcs)
-            
-            # Calculate missing ROMs (those in filtered DAT but not matched)
-            missing_count = total_dat_games - len(matched_crcs)
-            
-            # Total ROMs is the count of in-memory results for the system
-            total_roms = len(system_results)
-            
-        elif hasattr(self, 'scanned_roms_manager'):
-            # Fall back to database results
+            missing_count = total_dat_games - matching_count
+            unrecognised_count = current_unrecognised
+            broken_count = current_broken
+            total_roms = len(system_results_dicts)
+        elif not system_results_dicts and hasattr(self, 'scanned_roms_manager'):
             scan_summary = self.scanned_roms_manager.get_scan_summary(current_system_id)
-            
-            if scan_summary['total'] == 0:
-                # No ROMs scanned yet in database
-                self.rom_stats_label.setText(f"<b>Total DAT:</b> {total_dat_games} | <b>Matching:</b> 0 | <b>Missing:</b> {total_dat_games} | <b>Unrecognised:</b> 0 | <b>Broken:</b> 0 | <b>Total ROMs:</b> 0")
-                return
-            
-            # Get all scanned ROMs to filter by visible DAT games
-            all_scanned_roms = self.scanned_roms_manager.get_all_scanned_roms(current_system_id)
-            
-            # Count matching ROMs (correct + wrong_filename) that are in the filtered DAT
-            matched_crcs = set()
-            
-            for rom_data in all_scanned_roms:
-                status = rom_data.get('status')
-                matched_crc = rom_data.get('matched_game_crc32')
+            if scan_summary and scan_summary.get('total', 0) > 0:
+                all_scanned_roms_from_db = self.scanned_roms_manager.get_all_scanned_roms(current_system_id)
+                db_matched_crcs = set()
+                for rom_data in all_scanned_roms_from_db:
+                    status = rom_data.get('status')
+                    rom_status_correct = ROMStatus.CORRECT.value
+                    rom_status_wrong_filename = ROMStatus.WRONG_FILENAME.value
+                    
+                    is_correct_or_wrong_filename = (status == rom_status_correct or status == 'correct' or
+                                                    status == rom_status_wrong_filename or status == 'wrong_filename')
+
+                    if is_correct_or_wrong_filename:
+                        matched_crc = rom_data.get('matched_game_crc32')
+                        if matched_crc and matched_crc in visible_crcs:
+                            db_matched_crcs.add(matched_crc)
                 
-                if status == 'correct' or status == 'wrong_filename':
-                    # Collect unique CRC32s that are in the filtered DAT
-                    if matched_crc:
-                        if matched_crc in visible_crcs:
-                            matched_crcs.add(matched_crc)
-            
-            # Matching count is the number of unique CRC32s matched (same logic as missing count)
-            matching_count = len(matched_crcs)
-            
-            # Calculate missing ROMs (those in filtered DAT but not matched)
-            missing_count = total_dat_games - len(matched_crcs)
-            
-            # Use scan summary for unrecognised, broken, and total counts
-            # These counts are independent of DAT filtering
-            unrecognised_count = scan_summary['not_recognized']
-            broken_count = scan_summary['broken']
-            
-            # Total ROMs is all scanned ROMs (independent of filtering)
-            total_roms = scan_summary['total']
-            
-        else:
-            # No scan results yet
-            self.rom_stats_label.setText(f"<b>Total DAT:</b> {total_dat_games} | <b>Matching:</b> 0 | <b>Missing:</b> {total_dat_games} | <b>Unrecognised:</b> 0 | <b>Broken:</b> 0 | <b>Total ROMs:</b> 0")
-            return
+                matching_count = len(db_matched_crcs)
+                missing_count = total_dat_games - matching_count
+                unrecognised_count = scan_summary.get('not_recognized', 0)
+                broken_count = scan_summary.get('broken', 0)
+                total_roms = scan_summary.get('total', 0)
+        # If both system_results_dicts is empty and the elif condition is false (e.g., no scan_summary or it's empty),
+        # the stats will remain at their initial zero/default values.
+        # The final self.rom_stats_label.setText outside this block will handle displaying these.
         
         # Update the stats label with the new format: Total DAT | Matching | Missing | Unrecognised | Broken | Total ROMs
         self.rom_stats_label.setText(f"<b>Total DAT:</b> {total_dat_games} | <b>Matching:</b> {matching_count} | <b>Missing:</b> {missing_count} | <b>Unrecognised:</b> {unrecognised_count} | <b>Broken:</b> {broken_count} | <b>Total ROMs:</b> {total_roms}")
         self.rom_stats_label.repaint()  # Force immediate repaint
+    
+    def save_current_filter_settings(self):
+        """Save current filter settings for the current system."""
+        if not self.current_system_id:
+            return
+        
+        # Collect current filter settings
+        filter_settings = {
+            "show_beta": self.show_beta_cb.isChecked(),
+            "show_demo": self.show_demo_cb.isChecked(),
+            "show_proto": self.show_proto_cb.isChecked(),
+            "show_unlicensed": self.show_unlicensed_cb.isChecked(),
+            "show_unofficial_translation": self.show_translation_cb.isChecked(),
+            "show_modified_release": self.show_modified_cb.isChecked(),
+            "show_overdump": self.show_overdump_cb.isChecked(),
+            "preferred_languages": [lang for lang, cb in self.language_checkboxes.items() if cb.isChecked()],
+            "preferred_regions": self.region_filter.get_region_priority(),
+            "ignored_regions": self.region_filter.get_ignored_regions(),
+            "remove_duplicates": self.region_filter.should_remove_duplicates()
+        }
+        
+        # Save to settings manager
+        self.settings_manager.set_system_filter_settings(str(self.current_system_id), filter_settings)
+    
+    def restore_filter_settings(self):
+        """Restore filter settings for the current system."""
+        if not self.current_system_id:
+            return
+        
+        # Get filter settings for this system
+        filter_settings = self.settings_manager.get_system_filter_settings(str(self.current_system_id))
+        
+        # Temporarily disconnect signals to avoid triggering apply_filters multiple times
+        self.show_beta_cb.toggled.disconnect()
+        self.show_demo_cb.toggled.disconnect()
+        self.show_proto_cb.toggled.disconnect()
+        self.show_unlicensed_cb.toggled.disconnect()
+        self.show_translation_cb.toggled.disconnect()
+        self.show_modified_cb.toggled.disconnect()
+        self.show_overdump_cb.toggled.disconnect()
+        
+        # Restore type filter settings
+        self.show_beta_cb.setChecked(filter_settings.get("show_beta", True))
+        self.show_demo_cb.setChecked(filter_settings.get("show_demo", True))
+        self.show_proto_cb.setChecked(filter_settings.get("show_proto", True))
+        self.show_unlicensed_cb.setChecked(filter_settings.get("show_unlicensed", True))
+        self.show_translation_cb.setChecked(filter_settings.get("show_unofficial_translation", True))
+        self.show_modified_cb.setChecked(filter_settings.get("show_modified_release", True))
+        self.show_overdump_cb.setChecked(filter_settings.get("show_overdump", True))
+        
+        # Restore language filter settings
+        # If no preferred_languages are saved (e.g., after a reset or for a new system),
+        # default to all available languages for the current system.
+        # Otherwise, use the saved preferred_languages.
+        saved_preferred_languages = filter_settings.get("preferred_languages")
+
+        if not self.language_checkboxes:
+            # This can happen if filter options haven't been updated yet for a new system
+            self.update_filter_options() # Ensure checkboxes are created
+
+        if saved_preferred_languages is None:
+            # No saved preference, default to all available languages
+            if self.language_checkboxes: # Ensure it's not empty after update_filter_options
+                preferred_languages = list(self.language_checkboxes.keys())
+            else:
+                # Fallback if still no languages (e.g., DAT has no language info at all)
+                # Though update_filter_options should add 'English' in this case.
+                preferred_languages = ["English"] 
+        else:
+            # Saved preference exists, use it
+            preferred_languages = saved_preferred_languages
+
+        for lang, checkbox in self.language_checkboxes.items():
+            # Temporarily disconnect to avoid triggering apply_filters during this loop
+            try:
+                checkbox.stateChanged.disconnect(self.apply_filters)
+            except TypeError:
+                pass # Signal was not connected
+            checkbox.setChecked(lang in preferred_languages)
+            # Reconnect the signal
+            checkbox.stateChanged.connect(self.apply_filters)
+        
+        # Restore region filter settings
+        if "preferred_regions" in filter_settings:
+            self.region_filter.set_region_priority(filter_settings["preferred_regions"])
+        if "ignored_regions" in filter_settings:
+            self.region_filter.set_ignored_regions(filter_settings["ignored_regions"])
+        if "remove_duplicates" in filter_settings:
+            self.region_filter.set_remove_duplicates(filter_settings["remove_duplicates"])
+        
+        # Rebuild available regions list based on current DAT games
+        if hasattr(self, 'all_games') and self.all_games:
+            all_regions = set()
+            for game in self.all_games:
+                if game.get('region'):
+                    all_regions.add(game['region'])
+            self.region_filter.rebuild_available_list(list(all_regions))
+        
+        # Reconnect signals
+        self.show_beta_cb.toggled.connect(self.apply_filters)
+        self.show_demo_cb.toggled.connect(self.apply_filters)
+        self.show_proto_cb.toggled.connect(self.apply_filters)
+        self.show_unlicensed_cb.toggled.connect(self.apply_filters)
+        self.show_translation_cb.toggled.connect(self.apply_filters)
+        self.show_modified_cb.toggled.connect(self.apply_filters)
+        self.show_overdump_cb.toggled.connect(self.apply_filters)
     
     def update_filter_options(self):
         """Update region and language filter options based on current DAT."""
@@ -1700,22 +2044,7 @@ class MainWindow(QMainWindow):
         self.show_overdump_cb.setChecked(False)
     
     def rename_wrong_filenames(self):
-        """Rename files with wrong filenames."""
-        # TODO: Implement rename functionality
-        pass
-    
-    def move_extra_files(self):
-        """Move extra/unrecognized files to subfolder."""
-        # TODO: Implement move functionality
-        pass
-    
-    def move_broken_files(self):
-        """Move broken files to subfolder."""
-        # TODO: Implement move functionality
-        pass
-    
-    def export_missing_list(self):
-        """Export list of missing ROMs."""
+        """Rename files with wrong filenames to their correct DAT names."""
         if not self.current_system_id:
             QMessageBox.warning(
                 self, "No System Selected",
@@ -1723,37 +2052,598 @@ class MainWindow(QMainWindow):
             )
             return
         
-        # Find missing ROMs
-        missing_games = self.rom_scanner.find_missing_roms(
-            self.current_system_id, self.current_scan_results
-        )
+        # Get ROMs with wrong filenames for current system
+        wrong_filename_roms = []
+        current_system_id = self.current_system_id
         
-        if not missing_games:
+        if hasattr(self, 'scanned_roms_manager'):
+            # Get from database
+            scanned_roms = self.scanned_roms_manager.get_scanned_roms_by_status(
+                current_system_id, ROMStatus.WRONG_FILENAME
+            )
+            wrong_filename_roms = scanned_roms
+        elif hasattr(self, 'current_scan_results') and self.current_scan_results:
+            # Get from memory
+            for result in self.current_scan_results:
+                if result.status == ROMStatus.WRONG_FILENAME:
+                    wrong_filename_roms.append({
+                        'file_path': result.file_path,
+                        'matched_game_crc32': result.matched_game.get('crc32') if result.matched_game else None,
+                        'matched_game': result.matched_game
+                    })
+        
+        if not wrong_filename_roms:
             QMessageBox.information(
-                self, "No Missing ROMs",
-                "No missing ROMs found for the current system."
+                self, "No Files to Rename",
+                "No ROMs with wrong filenames found for the current system."
             )
             return
         
-        # Save to file
-        filename, _ = QFileDialog.getSaveFileName(
-            self, "Save Missing ROMs List", "missing_roms.txt", "Text Files (*.txt)"
+        # Confirm with user
+        reply = QMessageBox.question(
+            self, "Rename Wrong Filenames",
+            f"Found {len(wrong_filename_roms)} ROM(s) with wrong filenames.\n\n"
+            "Do you want to rename them to their correct DAT names?",
+            QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No,
+            QMessageBox.StandardButton.No
         )
         
-        if filename:
+        if reply != QMessageBox.StandardButton.Yes:
+            return
+        
+        renamed_count = 0
+        failed_renames = []
+        
+        print(f"DEBUG: Found {len(wrong_filename_roms)} ROMs with wrong filenames")
+        
+        for i, rom_data in enumerate(wrong_filename_roms):
+            print(f"DEBUG: Processing ROM {i+1}/{len(wrong_filename_roms)}: {rom_data}")
             try:
-                with open(filename, 'w', encoding='utf-8') as f:
-                    f.write(f"Missing ROMs for {self.system_combo.currentText()}\n")
-                    f.write("=" * 50 + "\n\n")
-                    
-                    for game in missing_games:
-                        f.write(f"{game['dat_rom_name']}\n")
+                old_path = Path(rom_data['file_path'])
+                print(f"DEBUG: Checking if file exists: {old_path}")
+                if not old_path.exists():
+                    failed_renames.append(f"{old_path.name}: File not found")
+                    print(f"DEBUG: File not found: {old_path}")
+                    continue
                 
-                QMessageBox.information(
-                    self, "Export Complete",
-                    f"Missing ROMs list saved to {filename}"
-                )
+                # Get the correct filename from the matched game
+                print(f"DEBUG: Available keys in rom_data: {list(rom_data.keys())}")
+                print(f"DEBUG: calculated_crc32 value: {rom_data.get('calculated_crc32')}")
+                print(f"DEBUG: calculated_crc32 type: {type(rom_data.get('calculated_crc32'))}")
+                
+                matched_crc32 = rom_data.get('calculated_crc32')
+                print(f"DEBUG: Matched CRC32: {matched_crc32}")
+                if not matched_crc32:
+                    failed_renames.append(f"{old_path.name}: No matched game found")
+                    print(f"DEBUG: No matched CRC32 found")
+                    continue
+                
+                # Get game details from database
+                print(f"DEBUG: Getting game details for CRC32: {matched_crc32}, size: {old_path.stat().st_size}")
+                game_details = self.db_manager.get_game_by_crc(current_system_id, matched_crc32, old_path.stat().st_size)
+                print(f"DEBUG: Game details: {game_details}")
+                if not game_details:
+                    failed_renames.append(f"{old_path.name}: Game details not found in DAT")
+                    print(f"DEBUG: Game details not found in database")
+                    continue
+                
+                # Construct new filename using the DAT ROM name (which includes region info)
+                dat_rom_name = game_details.get('dat_rom_name', game_details['major_name'])
+                print(f"DEBUG: DAT ROM name: {dat_rom_name}")
+                
+                # Remove the extension from dat_rom_name if it exists, we'll use the original file's extension
+                if '.' in dat_rom_name:
+                    correct_name = dat_rom_name.rsplit('.', 1)[0]
+                else:
+                    correct_name = dat_rom_name
+                    
+                print(f"DEBUG: Correct name without extension: {correct_name}")
+                # Sanitize filename for Windows (remove invalid characters)
+                invalid_chars = '<>:"/\\|?*'
+                for char in invalid_chars:
+                    correct_name = correct_name.replace(char, '_')
+                print(f"DEBUG: Sanitized correct name: {correct_name}")
+                
+                # Keep the original file extension
+                new_filename = f"{correct_name}{old_path.suffix}"
+                new_path = old_path.parent / new_filename
+                
+                print(f"DEBUG: Attempting to rename '{old_path.name}' to '{new_filename}'")
+                print(f"DEBUG: Full paths - Old: {old_path}, New: {new_path}")
+                
+                # Check if target file already exists
+                if new_path.exists() and new_path != old_path:
+                    failed_renames.append(f"{old_path.name}: Target file already exists ({new_filename})")
+                    print(f"DEBUG: Target file already exists: {new_path}")
+                    continue
+                
+                # Rename the file
+                print(f"DEBUG: Executing rename from {old_path} to {new_path}")
+                old_path.rename(new_path)
+                print(f"DEBUG: File rename successful")
+                
+                # Update database with new path and status
+                if hasattr(self, 'scanned_roms_manager'):
+                    print(f"DEBUG: Updating database - old path: {str(old_path)}, new path: {str(new_path)}")
+                    self.scanned_roms_manager.update_rom_path(
+                        current_system_id, str(old_path), str(new_path)
+                    )
+                    print(f"DEBUG: Database path updated")
+                    self.scanned_roms_manager.update_rom_status(
+                        current_system_id, str(new_path), ROMStatus.CORRECT
+                    )
+                    print(f"DEBUG: Database status updated to CORRECT")
+                else:
+                    print(f"DEBUG: No scanned_roms_manager available")
+                
+                renamed_count += 1
+                print(f"DEBUG: Successfully renamed file {i+1}")
+                
             except Exception as e:
+                error_msg = f"{Path(rom_data['file_path']).name}: {str(e)}"
+                failed_renames.append(error_msg)
+                print(f"DEBUG: Exception occurred: {error_msg}")
+                import traceback
+                print(f"DEBUG: Full traceback: {traceback.format_exc()}")
+        
+        # Show results
+        message = f"Successfully renamed {renamed_count} file(s)."
+        if failed_renames:
+            message += f"\n\nFailed to rename {len(failed_renames)} file(s):\n"
+            message += "\n".join(failed_renames[:10])  # Show first 10 failures
+            if len(failed_renames) > 10:
+                message += f"\n... and {len(failed_renames) - 10} more."
+        
+        if renamed_count > 0:
+            QMessageBox.information(self, "Rename Complete", message)
+            # Refresh the UI to reflect changes
+            self.update_correct_roms()
+            self.update_rom_stats()
+        else:
+            QMessageBox.warning(self, "Rename Failed", message)
+    
+    def move_extra_files(self):
+        """Move extra/unrecognized files to subfolder."""
+        if not self.current_system_id:
+            QMessageBox.warning(
+                self, "No System Selected",
+                "Please select a system first."
+            )
+            return
+
+        # Get unrecognized ROMs for current system
+        unrecognized_roms = []
+        current_system_id = self.current_system_id
+
+        if hasattr(self, 'scanned_roms_manager'):
+            # Get from database
+            scanned_roms = self.scanned_roms_manager.get_scanned_roms_by_status(
+                current_system_id, ROMStatus.NOT_RECOGNIZED
+            )
+            unrecognized_roms = [rom_data['file_path'] for rom_data in scanned_roms]
+        elif hasattr(self, 'current_scan_results') and self.current_scan_results:
+            # Get from memory results (these should be from the current session's scan)
+            for result in self.current_scan_results:
+                if result.status == ROMStatus.NOT_RECOGNIZED and result.system_id == current_system_id:
+                    unrecognized_roms.append(result.file_path)
+        
+        if not unrecognized_roms:
+            QMessageBox.information(
+                self, "No Unrecognized ROMs",
+                "No unrecognized ROM files found for the current system. This might be because a fresh scan is needed after clearing cached data."
+            )
+            return
+
+        # Get ROM folders for current system
+        system_folders = self.settings_manager.get_system_rom_folders(str(current_system_id))
+        if not system_folders:
+            QMessageBox.warning(
+                self, "No ROM Folders",
+                "No ROM folders configured for the current system."
+            )
+            return
+
+        # Filter unrecognized_roms to only include files directly in a configured ROM folder
+        system_folders_paths = [Path(folder).resolve() for folder in system_folders]
+        filtered_unrecognized_roms = []
+        for rom_path_str in unrecognized_roms:
+            rom_path = Path(rom_path_str).resolve()
+            if rom_path.parent in system_folders_paths:
+                filtered_unrecognized_roms.append(rom_path_str)
+        
+        unrecognized_roms = filtered_unrecognized_roms
+
+        if not unrecognized_roms:
+            QMessageBox.information(
+                self, "No Unrecognized ROMs",
+                "No unrecognized ROM files found in the root of the configured ROM folders for the current system after filtering."
+            )
+            return
+        
+        # Confirm with user
+        extra_folder_name = "extra" # Define the folder name for extra files
+        
+        reply = QMessageBox.question(
+            self, "Move Unrecognized Files",
+            f"Move {len(unrecognized_roms)} unrecognized ROM file(s) to '{extra_folder_name}' subfolder(s)?\n\n"
+            f"This will create an '{extra_folder_name}' folder in each ROM directory and move the files there.",
+            QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No,
+            QMessageBox.StandardButton.No
+        )
+        
+        if reply != QMessageBox.StandardButton.Yes:
+            return
+        
+        moved_files_count = 0
+        failed_moves_details = []
+        
+        progress_dialog = ProgressDialog("Moving unrecognized files...", self)
+        progress_dialog.progress_bar.setRange(0, len(unrecognized_roms))
+        progress_dialog.setWindowModality(Qt.WindowModality.WindowModal)
+        progress_dialog.progress_bar.setValue(0)
+
+        for i, file_path_str in enumerate(unrecognized_roms):
+            if progress_dialog.cancelled:
+                break
+            progress_dialog.progress_bar.setValue(i)
+            progress_dialog.status_label.setText(f"Moving {Path(file_path_str).name}...")
+            QApplication.processEvents() # Keep UI responsive
+
+            source_path = Path(file_path_str)
+            if not source_path.exists():
+                error_msg = f"{source_path.name} (File not found at: {source_path})"
+                failed_moves_details.append(error_msg)
+                print(f"Error moving file: {error_msg}")
+                continue
+            
+            # Determine which ROM folder this file belongs to and create target dir
+            target_dir = None
+            for folder_str in system_folders:
+                folder_path = Path(folder_str).resolve()
+                if source_path.parent == folder_path:
+                    target_dir = folder_path / extra_folder_name
+                    break
+            
+            if not target_dir:
+                error_msg = f"{source_path.name} (Could not determine base ROM folder)"
+                failed_moves_details.append(error_msg)
+                print(f"Error moving file: {error_msg}")
+                continue
+
+            try:
+                target_dir.mkdir(parents=True, exist_ok=True)
+                target_file_path = target_dir / source_path.name
+                
+                # Handle potential file conflicts (e.g., if file already exists in target)
+                if target_file_path.exists():
+                    # Simple conflict resolution: append a number
+                    count = 1
+                    base_name = target_file_path.stem
+                    extension = target_file_path.suffix
+                    while target_file_path.exists():
+                        target_file_path = target_dir / f"{base_name}_{count}{extension}"
+                        count += 1
+                
+                shutil.move(str(source_path), str(target_file_path))
+                moved_files_count += 1
+                # Optionally, update status in DB or internal lists if needed
+                if hasattr(self, 'scanned_roms_manager'):
+                    self.scanned_roms_manager.update_rom_status(self.current_system_id, str(source_path), ROMStatus.MOVED_EXTRA)
+                    self.scanned_roms_manager.update_rom_path(str(self.current_system_id), str(source_path), str(target_file_path))
+
+            except Exception as e:
+                error_msg = f"{source_path.name} (Error: {e})"
+                failed_moves_details.append(error_msg)
+                print(f"Error moving file: {error_msg}")
+
+        progress_dialog.progress_bar.setValue(len(unrecognized_roms))
+
+        summary_message = f"Moved {moved_files_count} unrecognized file(s) to '{extra_folder_name}' subfolder(s)."
+        if failed_moves_details:
+            summary_message += "\n\nFailed to move some files:\n" + "\n".join(failed_moves_details)
+            print("Move Complete with Errors:")
+            print(summary_message) # Log the full error summary to terminal
+            QMessageBox.warning(self, "Move Complete with Errors", summary_message)
+        else:
+            QMessageBox.information(self, "Move Complete", summary_message)
+        
+        # After moving, rescan the system to update the lists and database
+        if self.current_system_id:
+            print(f"Rescanning system {self.current_system_id} after moving extra files.")
+            self.scan_rom_folder(prompt_for_folder=False)
+        
+        # self.update_rom_stats() # Refresh the displayed stats - This is now handled by on_scan_finished
+    
+    def move_broken_files(self):
+        """Move broken files to subfolder."""
+        if not self.current_system_id:
+            QMessageBox.warning(
+                self, "No System Selected",
+                "Please select a system first."
+            )
+            return
+        
+        # Get broken ROMs for current system
+        broken_roms = []
+        current_system_id = self.current_system_id
+
+        if hasattr(self, 'scanned_roms_manager'):
+            # Get from database
+            scanned_roms = self.scanned_roms_manager.get_scanned_roms_by_status(
+                current_system_id, ROMStatus.BROKEN
+            )
+            broken_roms = [rom_data['file_path'] for rom_data in scanned_roms]
+        elif hasattr(self, 'current_scan_results') and self.current_scan_results:
+            # Get from memory results (these should be from the current session's scan)
+            for result in self.current_scan_results:
+                if result.status == ROMStatus.BROKEN and result.system_id == current_system_id:
+                    broken_roms.append(result.file_path)
+        
+        if not broken_roms:
+            QMessageBox.information(
+                self, "No Broken ROMs",
+                "No broken ROM files found for the current system. This might be because a fresh scan is needed after clearing cached data."
+            )
+            return
+
+        # Get ROM folders from scanned ROM file paths
+        system_folders = set()
+        for rom_path_str in broken_roms:
+            rom_path = Path(rom_path_str)
+            system_folders.add(str(rom_path.parent))
+        
+        system_folders = list(system_folders)
+        if not system_folders:
+            QMessageBox.warning(
+                self, "No ROM Folders",
+                "No ROM folders found from scanned ROMs."
+            )
+            return
+
+        # Filter broken_roms to only include files directly in a ROM folder
+        system_folders_paths = [Path(folder).resolve() for folder in system_folders]
+        filtered_broken_roms = []
+        for rom_path_str in broken_roms:
+            rom_path = Path(rom_path_str).resolve()
+            if rom_path.parent in system_folders_paths:
+                filtered_broken_roms.append(rom_path_str)
+        
+        broken_roms = filtered_broken_roms
+
+        if not broken_roms:
+            QMessageBox.information(
+                self, "No Broken ROMs",
+                "No broken ROM files found in the root of the configured ROM folders for the current system after filtering."
+            )
+            return
+        
+        # Confirm with user
+        broken_folder_name = 'broken' # Ensure 'broken' is used, overriding any settings
+        
+        reply = QMessageBox.question(
+            self, "Move Broken Files",
+            f"Move {len(broken_roms)} broken ROM file(s) to '{broken_folder_name}' subfolder(s)?\n\n"
+            f"This will create a '{broken_folder_name}' folder in each ROM directory and move the files there.",
+            QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No,
+            QMessageBox.StandardButton.No
+        )
+        
+        if reply != QMessageBox.StandardButton.Yes:
+            return
+        
+        moved_files = []
+        failed_moves = []
+        
+        try:
+            for file_path in broken_roms:
+                source_path = Path(file_path)
+                if not source_path.exists():
+                    failed_moves.append(f"{source_path.name} (file not found at: {source_path})")
+                    continue
+                
+                # Find which ROM folder this file belongs to
+                rom_folder = None
+                for folder in system_folders:
+                    folder_path = Path(folder)
+                    try:
+                        # Check if file is within this ROM folder
+                        source_path.relative_to(folder_path)
+                        rom_folder = folder_path
+                        break
+                    except ValueError:
+                        # File is not in this folder
+                        continue
+                
+                if not rom_folder:
+                    failed_moves.append(f"{source_path.name} (not in ROM folder - checked: {[str(Path(f)) for f in system_folders]})")
+                    continue
+                
+                # Create broken subfolder
+                # broken_folder_name is already defined and hardcoded earlier
+                broken_folder = rom_folder / broken_folder_name
+                try:
+                    broken_folder.mkdir(exist_ok=True)
+                    print(f"Created/verified broken folder: {broken_folder}")
+                except Exception as e:
+                    failed_moves.append(f"{source_path.name} (failed to create broken folder: {e})")
+                    continue
+                
+                # Move file
+                dest_path = broken_folder / source_path.name
+                
+                # Handle duplicate names
+                counter = 1
+                original_dest = dest_path
+                while dest_path.exists():
+                    stem = original_dest.stem
+                    suffix = original_dest.suffix
+                    dest_path = broken_folder / f"{stem}_{counter}{suffix}"
+                    counter += 1
+                
+                try:
+                    print(f"Moving file from {source_path} to {dest_path}")
+                    source_path.rename(dest_path)
+                    moved_files.append(source_path.name)
+                    print(f"Successfully moved: {source_path.name}")
+                except Exception as e:
+                    failed_moves.append(f"{source_path.name} (failed to move: {e})")
+                    continue
+                
+        except Exception as e:
+            QMessageBox.critical(
+                self, "Error Moving Files",
+                f"An error occurred while moving files:\n{str(e)}"
+            )
+            return
+        
+        # Show results
+        if moved_files:
+            message = f"Successfully moved {len(moved_files)} file(s) to '{broken_folder_name}' subfolder(s)."
+            if failed_moves:
+                message += f"\n\nFailed to move {len(failed_moves)} file(s):\n" + "\n".join(failed_moves)
+            
+            QMessageBox.information(self, "Move Complete", message)
+            
+            # Refresh the ROM scan to update the lists
+            self.status_bar.showMessage("Refreshing ROM scan...")
+            # QTimer.singleShot(100, self._refresh_rom_scan) # Removed old refresh
+            self.rescan_current_rom_folder() # Added direct call to scan_rom_folder
+        else:
+            error_message = "No files were moved."
+            if failed_moves:
+                error_message += f"\n\nErrors:\n" + "\n".join(failed_moves)
+            QMessageBox.warning(self, "Move Failed", error_message)
+            # Also scan if move failed but there were attempts, to reflect any partial changes or state
+            if failed_moves or moved_files: # Check if any operation was attempted
+                self.scan_rom_folder()
+    
+    # def _refresh_rom_scan(self): # Removed unused method
+    #     """Refresh the ROM scan for the current system."""
+    #     if not self.current_system_id:
+    #         return
+    #     
+    #     # Clear existing scan results from database to ensure moved files are removed
+    #     self.scanned_roms_manager.clear_system_scans(self.current_system_id)
+    #     
+    #     # Get ROM folders for current system
+    #     system_folders = self.settings_manager.get_system_rom_folders(str(self.current_system_id))
+    #     if not system_folders:
+    #         self.status_bar.showMessage("No ROM folders to scan")
+    #         return
+    #     
+    #     # Use the first ROM folder for scanning (rglob will scan subdirectories recursively)
+    #     folder = system_folders[0]
+    #     folder_path = Path(folder)
+    #     
+    #     # Check if folder exists
+    #     if not folder_path.exists():
+    #         self.status_bar.showMessage(f"ROM folder not found: {folder_path}")
+    #         QMessageBox.critical(
+    #             self, "ROM Folder Not Found",
+    #             f"The ROM folder does not exist:\n{folder_path}"
+    #         )
+    #         return
+    #     
+    #     # Start scan thread
+    #     self.scan_thread = ROMScanThread(
+    #         self.rom_scanner, folder, self.current_system_id
+    #     )
+    #     self.scan_thread.finished.connect(self.on_scan_finished)
+    #     self.scan_thread.error.connect(self.on_scan_error)
+    #     self.scan_thread.start()
+    #     
+    #     self.status_bar.showMessage(f"Scanning ROM folder: {folder_path}")
+    
+    def export_missing_list(self):
+        """Export list of missing ROMs based on current filters."""
+        if not self.current_system_id:
+            QMessageBox.warning(self, "No System Selected", "Please select a system first.")
+            return
+
+        # Get ROM folder path from scanned ROMs (same logic as move_broken_files)
+        rom_folder_path = None
+        current_system_id = self.current_system_id
+        
+        # Get any scanned ROM to determine the ROM folder path
+        if hasattr(self, 'scanned_roms_manager'):
+            scanned_roms = self.scanned_roms_manager.get_all_scanned_roms(current_system_id)
+            if scanned_roms:
+                # Use the parent directory of the first scanned ROM as the ROM folder
+                first_rom_path = Path(scanned_roms[0]['file_path'])
+                rom_folder_path = str(first_rom_path.parent)
+        elif hasattr(self, 'current_scan_results') and self.current_scan_results:
+            # Get from memory results
+            for result in self.current_scan_results:
+                if result.system_id == current_system_id:
+                    rom_folder_path = str(Path(result.file_path).parent)
+                    break
+        
+        if not rom_folder_path:
+            QMessageBox.warning(self, "ROM Path Not Configured", "No ROM path is configured for the current system. Please scan a ROM folder first.")
+            return
+        missing_folder_path = os.path.join(rom_folder_path, 'missing')
+        output_file_path = os.path.join(missing_folder_path, 'missing_roms.txt')
+
+        try:
+            os.makedirs(missing_folder_path, exist_ok=True)
+        except OSError as e:
+            QMessageBox.critical(self, "Error Creating Directory", f"Could not create directory {missing_folder_path}: {e}")
+            return
+
+        visible_missing_games_info = []
+        # Iterate through the items in the missing_tree, which is what the user sees in the "Missing ROMs" tab
+        for i in range(self.missing_tree.topLevelItemCount()):
+            item = self.missing_tree.topLevelItem(i)
+            if not item.isHidden(): # Should always be visible if in this tree
+                # Column 1 is 'Game Name', Column 4 is 'CRC32' in missing_tree
+                # Based on update_missing_roms: NumericTreeWidgetItem([
+                # str(row_number), game_details['major_name'], game_details.get('region', ''), 
+                # game_details.get('languages', ''), game_details['crc32'] ])
+                game_name = item.text(1) 
+                crc32 = item.text(4) 
+                if game_name and crc32: # Ensure we have valid data
+                    visible_missing_games_info.append({'name': game_name, 'crc32': crc32})
+
+        if not visible_missing_games_info:
+            QMessageBox.information(self, "No Missing ROMs", "No ROMs are currently listed in the 'Missing ROMs' tab to export.")
+            return
+
+        # The rest of the function uses this list, so rename the variable for clarity
+        visible_dat_games_info = visible_missing_games_info
+
+        scanned_roms_data = self.scanned_roms_manager.get_all_scanned_roms(self.current_system_id)
+        found_rom_crcs = set()
+        if scanned_roms_data:
+            for rom_entry in scanned_roms_data:
+                status = rom_entry.get('status')
+                # Consider ROMStatus.CORRECT and ROMStatus.WRONG_FILENAME as found
+                if status == ROMStatus.CORRECT.value or status == 'correct' or \
+                   status == ROMStatus.WRONG_FILENAME.value or status == 'wrong_filename':
+                    crc = rom_entry.get('matched_game_crc32') or rom_entry.get('crc32') # Prefer matched_game_crc32 if available
+                    if crc:
+                        found_rom_crcs.add(crc)
+        
+        filtered_missing_games = []
+        for game_info in visible_dat_games_info:
+            if game_info['crc32'] not in found_rom_crcs:
+                filtered_missing_games.append(game_info['name'])
+
+        if not filtered_missing_games:
+            QMessageBox.information(self, "No Missing ROMs", "No missing ROMs found in the currently filtered list.")
+            return
+
+        try:
+            with open(output_file_path, 'w', encoding='utf-8') as f:
+                f.write(f"Missing ROMs for {self.system_combo.currentText()} (Filtered List)\n")
+                f.write("=" * 50 + "\n\n")
+                for game_name in filtered_missing_games:
+                    f.write(f"{game_name}\n")
+            
+            QMessageBox.information(
+                self, "Export Complete",
+                f"Missing ROMs list saved to {output_file_path}"
+            )
+        except Exception as e:
                 QMessageBox.critical(
                     self, "Export Error",
                     f"Error saving file:\n{str(e)}"
@@ -1831,6 +2721,10 @@ class MainWindow(QMainWindow):
     
     def closeEvent(self, event):
         """Handle window close event."""
+        # Save current filter settings before closing
+        if hasattr(self, 'current_system_id') and self.current_system_id is not None:
+            self.save_current_filter_settings()
+        
         # Save window state - convert QByteArray to base64 string for JSON serialization
         geometry = self.saveGeometry()
         geometry_str = base64.b64encode(geometry.data()).decode('utf-8')

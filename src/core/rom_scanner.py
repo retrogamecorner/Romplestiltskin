@@ -47,6 +47,8 @@ class ROMStatus(Enum):
     NOT_RECOGNIZED = "not_recognized"  # Found locally, no match in DAT
     MISSING = "missing"  # In DAT, not found locally
     DUPLICATE = "duplicate"  # Multiple files with same CRC
+    MOVED_EXTRA = "moved_extra"  # Unrecognized file moved to an 'extra' folder
+    MOVED_BROKEN = "moved_broken" # Broken file moved to a 'broken' folder
 
 @dataclass
 class ROMScanResult:
@@ -261,15 +263,25 @@ class ROMScanner:
         """
         folder = Path(folder_path)
         if not folder.exists():
+            print(f"ROM Scanner: Folder does not exist: {folder}")
             return []
         
-        # Find all ROM files
-        rom_files = []
-        for file_path in folder.rglob('*'):
-            if (file_path.is_file() and 
-                file_path.suffix.lower() in self.supported_extensions):
-                rom_files.append(str(file_path))
+        print(f"ROM Scanner: Scanning folder: {folder}")
+        print(f"ROM Scanner: Supported extensions: {self.supported_extensions}")
         
+        # Find all ROM files (excluding special subfolders)
+        rom_files = []
+        excluded_folders = {'broken', '_broken', 'extra', '_extra', 'filtered', '_filtered', 'multi', '_multi'}
+        
+        for file_path in folder.glob('*'):  # Changed rglob to glob
+            if file_path.is_file():
+                # No need to check for excluded subfolders if not scanning recursively
+                print(f"ROM Scanner: Found file: {file_path} (extension: {file_path.suffix.lower()})")
+                if file_path.suffix.lower() in self.supported_extensions:
+                    rom_files.append(str(file_path))
+                    print(f"ROM Scanner: Added ROM file: {file_path}")
+        
+        print(f"ROM Scanner: Found {len(rom_files)} ROM files")
         if not rom_files:
             return []
         

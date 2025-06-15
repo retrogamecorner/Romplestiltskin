@@ -58,6 +58,9 @@ class DatabaseManager:
                     is_unofficial_translation BOOLEAN DEFAULT 0,
                     is_verified_dump BOOLEAN DEFAULT 0,
                     is_modified_release BOOLEAN DEFAULT 0,
+                    is_pirate BOOLEAN DEFAULT 0,
+                    is_hack BOOLEAN DEFAULT 0,
+                    is_trainer BOOLEAN DEFAULT 0,
                     is_overdump BOOLEAN DEFAULT 0,
                     crc32 TEXT NOT NULL,
                     size INTEGER NOT NULL,
@@ -83,6 +86,13 @@ class DatabaseManager:
             cursor.execute("""
                 CREATE INDEX IF NOT EXISTS idx_games_region ON games(region)
             """)
+            
+            # Add a column to systems table to store game count
+            try:
+                cursor.execute("ALTER TABLE systems ADD COLUMN game_count INTEGER DEFAULT 0")
+            except sqlite3.OperationalError as e:
+                if 'duplicate column name' not in str(e).lower(): # pragma: no cover
+                    raise # Re-raise if it's not a 'duplicate column' error
             
             conn.commit()
     
@@ -159,8 +169,17 @@ class DatabaseManager:
             cursor = conn.cursor()
             cursor.execute("DELETE FROM systems WHERE id = ?", (system_id,))
             conn.commit()
+
+    def update_system_game_count(self, system_id: int) -> None:
+        """Update the game count for a specific system."""
+        with self.get_connection() as conn:
+            cursor = conn.cursor()
+            cursor.execute("SELECT COUNT(*) FROM games WHERE system_id = ?", (system_id,))
+            count = cursor.fetchone()[0]
+            cursor.execute("UPDATE systems SET game_count = ? WHERE id = ?", (count, system_id))
+            conn.commit()
     
-    def add_game(self, game_data: Dict[str, Any]) -> int:
+    def add_game(self, system_id: int, game_data: Dict[str, Any]) -> int:
         """Add a new game to the database.
         
         Args:
@@ -174,18 +193,24 @@ class DatabaseManager:
             
             # Prepare the SQL statement
             columns = [
-                'system_id', 'dat_game_name', 'dat_rom_name', 'major_name',
+                'dat_game_name', 'dat_rom_name', 'major_name',
                 'region', 'languages', 'is_beta', 'is_demo', 'is_proto',
                 'is_unlicensed', 'release_version', 'is_unofficial_translation',
-                'is_verified_dump', 'is_modified_release', 'is_overdump',
+                'is_verified_dump', 'is_modified_release', 
+                'is_pirate', 'is_hack', 'is_trainer', # Added new columns
+                'is_overdump',
                 'crc32', 'size', 'md5', 'sha1', 'clone_of_id_string', 'disc_info'
             ]
             
-            placeholders = ', '.join(['?' for _ in columns])
-            values = [game_data.get(col) for col in columns]
+            # Prepend system_id to the list of columns for the INSERT statement
+            insert_columns = ['system_id'] + columns
+            placeholders = ', '.join(['?' for _ in insert_columns])
+            
+            # Prepare values, starting with system_id
+            values = [system_id] + [game_data.get(col) for col in columns]
             
             cursor.execute(f"""
-                INSERT INTO games ({', '.join(columns)})
+                INSERT INTO games ({', '.join(insert_columns)})
                 VALUES ({placeholders})
             """, values)
             
