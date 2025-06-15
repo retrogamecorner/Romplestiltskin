@@ -21,6 +21,7 @@ from PyQt6.QtGui import QFont
 
 from core.settings_manager import SettingsManager
 from ui.drag_drop_list import DragDropListWidget
+from ui.theme import Theme
 
 class SettingsDialog(QDialog):
     """Settings configuration dialog."""
@@ -33,6 +34,10 @@ class SettingsDialog(QDialog):
         
         self.settings_manager = settings_manager
         self.temp_settings = settings_manager.get_all_settings().copy()
+        
+        # Initialize theme
+        self.theme = Theme()
+        self.setStyleSheet(self.theme.get_stylesheet())
         
         self.setup_ui()
         self.load_settings()
@@ -85,7 +90,7 @@ class SettingsDialog(QDialog):
             "Used when multiple versions of the same game are available."
         )
         region_help.setWordWrap(True)
-        region_help.setStyleSheet("color: gray; font-size: 10px;")
+        region_help.setStyleSheet(f"color: {colors['secondary_text']}; font-size: 10px;")
         region_layout.addWidget(region_help)
         
         self.region_priority_list = DragDropListWidget()
@@ -96,42 +101,45 @@ class SettingsDialog(QDialog):
         region_buttons = QHBoxLayout()
         region_buttons.setSpacing(10)
         
-        modern_button_style = """
-            QPushButton {
-                background-color: #2196f3;
-                color: white;
+        # Get theme colors for button styles
+        colors = self.theme.get_colors()
+        
+        modern_button_style = f"""
+            QPushButton {{
+                background-color: {colors['highlight']};
+                color: {colors['button_text']};
                 border: none;
                 border-radius: 6px;
                 padding: 8px 16px;
                 font-size: 12px;
                 font-weight: bold;
                 min-height: 16px;
-            }
-            QPushButton:hover {
-                background-color: #1976d2;
-            }
-            QPushButton:pressed {
-                background-color: #0d47a1;
-            }
+            }}
+            QPushButton:hover {{
+                background-color: {colors['highlight_hover']};
+            }}
+            QPushButton:pressed {{
+                background-color: {colors['highlight_pressed']};
+            }}
         """
         
-        secondary_button_style = """
-            QPushButton {
-                background-color: #757575;
-                color: white;
+        secondary_button_style = f"""
+            QPushButton {{
+                background-color: {colors['medium_gray']};
+                color: {colors['button_text']};
                 border: none;
                 border-radius: 6px;
                 padding: 8px 16px;
                 font-size: 12px;
                 font-weight: bold;
                 min-height: 16px;
-            }
-            QPushButton:hover {
-                background-color: #616161;
-            }
-            QPushButton:pressed {
-                background-color: #424242;
-            }
+            }}
+            QPushButton:hover {{
+                background-color: {colors['light_gray']};
+            }}
+            QPushButton:pressed {{
+                background-color: {colors['border']};
+            }}
         """
         
         self.add_region_edit = QLineEdit()
@@ -160,7 +168,7 @@ class SettingsDialog(QDialog):
             "Used when multiple language versions are available."
         )
         language_help.setWordWrap(True)
-        language_help.setStyleSheet("color: gray; font-size: 10px;")
+        language_help.setStyleSheet(f"color: {colors['secondary_text']}; font-size: 10px;")
         language_layout.addWidget(language_help)
         
         self.language_priority_list = DragDropListWidget()
@@ -203,7 +211,7 @@ class SettingsDialog(QDialog):
             "Larger values use more memory but may be faster."
         )
         chunk_help.setWordWrap(True)
-        chunk_help.setStyleSheet("color: gray; font-size: 10px;")
+        chunk_help.setStyleSheet(f"color: {colors['secondary_text']}; font-size: 10px;")
         performance_layout.addRow(chunk_help)
         
         layout.addWidget(performance_group)
@@ -217,23 +225,23 @@ class SettingsDialog(QDialog):
         layout = QVBoxLayout(tab)
         
         # Define button styles for this tab
-        modern_button_style = """
-            QPushButton {
-                background-color: #2196f3;
-                color: white;
+        modern_button_style = f"""
+            QPushButton {{
+                background-color: {colors['highlight']};
+                color: {colors['button_text']};
                 border: none;
                 border-radius: 6px;
                 padding: 8px 16px;
                 font-size: 12px;
                 font-weight: bold;
                 min-height: 16px;
-            }
-            QPushButton:hover {
-                background-color: #1976d2;
-            }
-            QPushButton:pressed {
-                background-color: #0d47a1;
-            }
+            }}
+            QPushButton:hover {{
+                background-color: {colors['highlight_hover']};
+            }}
+            QPushButton:pressed {{
+                background-color: {colors['highlight_pressed']};
+            }}
         """
         
         # DAT Files
@@ -257,7 +265,7 @@ class SettingsDialog(QDialog):
             "These files define the official ROM sets for each system."
         )
         dat_help.setWordWrap(True)
-        dat_help.setStyleSheet("color: gray; font-size: 10px;")
+        dat_help.setStyleSheet(f"color: {colors['secondary_text']}; font-size: 10px;")
         dat_layout.addRow(dat_help)
         
         layout.addWidget(dat_group)
@@ -295,7 +303,7 @@ class SettingsDialog(QDialog):
             "Leave empty to create subfolders in the ROM directory."
         )
         output_help.setWordWrap(True)
-        output_help.setStyleSheet("color: gray; font-size: 10px;")
+        output_help.setStyleSheet(f"color: {colors['secondary_text']}; font-size: 10px;")
         output_layout.addRow(output_help)
         
         layout.addWidget(output_group)
@@ -318,7 +326,7 @@ class SettingsDialog(QDialog):
             "You can always change these filters in the main window."
         )
         filter_help.setWordWrap(True)
-        filter_help.setStyleSheet("color: gray; font-size: 10px;")
+        filter_help.setStyleSheet(f"color: {colors['secondary_text']}; font-size: 10px;")
         filter_layout.addWidget(filter_help)
         
         # Checkboxes for each filter
@@ -400,7 +408,7 @@ class SettingsDialog(QDialog):
             "Lower values find more matches but may include false positives."
         )
         threshold_help.setWordWrap(True)
-        threshold_help.setStyleSheet("color: gray; font-size: 10px;")
+        threshold_help.setStyleSheet(f"color: {colors['secondary_text']}; font-size: 10px;")
         matching_layout.addRow(threshold_help)
         
         layout.addWidget(matching_group)
@@ -447,41 +455,42 @@ class SettingsDialog(QDialog):
     def get_button_styles(self):
         """Helper to provide consistent button styles."""
         # These styles are copied from create_general_tab for consistency
-        modern_button_style = """
-            QPushButton {
-                background-color: #2196f3;
-                color: white;
+        colors = self.theme.get_colors()
+        modern_button_style = f"""
+            QPushButton {{
+                background-color: {colors['highlight']};
+                color: {colors['button_text']};
                 border: none;
                 border-radius: 6px;
                 padding: 8px 16px;
                 font-size: 12px;
                 font-weight: bold;
                 min-height: 16px;
-            }
-            QPushButton:hover {
-                background-color: #1976d2;
-            }
-            QPushButton:pressed {
-                background-color: #0d47a1;
-            }
+            }}
+            QPushButton:hover {{
+                background-color: {colors['highlight_hover']};
+            }}
+            QPushButton:pressed {{
+                background-color: {colors['highlight_pressed']};
+            }}
         """
-        secondary_button_style = """
-            QPushButton {
-                background-color: #757575;
-                color: white;
+        secondary_button_style = f"""
+            QPushButton {{
+                background-color: {colors['secondary']};
+                color: {colors['button_text']};
                 border: none;
                 border-radius: 6px;
                 padding: 8px 16px;
                 font-size: 12px;
                 font-weight: bold;
                 min-height: 16px;
-            }
-            QPushButton:hover {
-                background-color: #616161;
-            }
-            QPushButton:pressed {
-                background-color: #424242;
-            }
+            }}
+            QPushButton:hover {{
+                background-color: {colors['secondary_hover']};
+            }}
+            QPushButton:pressed {{
+                background-color: {colors['secondary_pressed']};
+            }}
         """
         return {"modern": modern_button_style, "secondary": secondary_button_style}
 
@@ -669,21 +678,21 @@ class SettingsDialog(QDialog):
         
         # Warning section
         warning_group = QGroupBox("⚠️ Danger Zone")
-        warning_group.setStyleSheet("""
-            QGroupBox {
+        warning_group.setStyleSheet(f"""
+            QGroupBox {{
                 font-weight: bold;
                 font-size: 14px;
-                color: #d32f2f;
-                border: 2px solid #d32f2f;
+                color: {colors['error']};
+                border: 2px solid {colors['error']};
                 border-radius: 8px;
                 margin-top: 10px;
                 padding-top: 10px;
-            }
-            QGroupBox::title {
+            }}
+            QGroupBox::title {{
                 subcontrol-origin: margin;
                 left: 10px;
                 padding: 0 8px 0 8px;
-            }
+            }}
         """)
         warning_layout = QVBoxLayout(warning_group)
         warning_layout.setSpacing(15)
@@ -693,27 +702,27 @@ class SettingsDialog(QDialog):
             "of any important data before proceeding."
         )
         warning_text.setWordWrap(True)
-        warning_text.setStyleSheet("color: #666; font-weight: normal; font-size: 12px;")
+        warning_text.setStyleSheet(f"color: {colors['secondary_text']}; font-weight: normal; font-size: 12px;")
         warning_layout.addWidget(warning_text)
         
         # Reset buttons with improved styling
-        button_style = """
-            QPushButton {
-                background-color: #f44336;
-                color: white;
+        button_style = f"""
+            QPushButton {{
+                background-color: {colors['error']};
+                color: {colors['button_text']};
                 border: none;
                 border-radius: 6px;
                 padding: 12px 24px;
                 font-size: 13px;
                 font-weight: bold;
                 min-height: 20px;
-            }
-            QPushButton:hover {
-                background-color: #d32f2f;
-            }
-            QPushButton:pressed {
-                background-color: #b71c1c;
-            }
+            }}
+            QPushButton:hover {{
+                background-color: {colors['error_hover']};
+            }}
+            QPushButton:pressed {{
+                background-color: {colors['error_pressed']};
+            }}
         """
         
         # Reset Program button
@@ -727,25 +736,25 @@ class SettingsDialog(QDialog):
             "ROM files in your ROM folders will NOT be deleted."
         )
         reset_program_desc.setWordWrap(True)
-        reset_program_desc.setStyleSheet("color: #666; font-size: 11px; margin-left: 20px;")
+        reset_program_desc.setStyleSheet(f"color: {colors['secondary_text']}; font-size: 11px; margin-left: 20px;")
         warning_layout.addWidget(reset_program_desc)
         
         # System selection for partial reset
         system_reset_group = QGroupBox("Remove Specific System")
-        system_reset_group.setStyleSheet("""
-            QGroupBox {
+        system_reset_group.setStyleSheet(f"""
+            QGroupBox {{
                 font-weight: bold;
                 font-size: 13px;
-                border: 1px solid #ccc;
+                border: 1px solid {colors['border']};
                 border-radius: 6px;
                 margin-top: 10px;
                 padding-top: 10px;
-            }
-            QGroupBox::title {
+            }}
+            QGroupBox::title {{
                 subcontrol-origin: margin;
                 left: 10px;
                 padding: 0 8px 0 8px;
-            }
+            }}
         """)
         system_reset_layout = QVBoxLayout(system_reset_group)
         system_reset_layout.setSpacing(10)
@@ -759,17 +768,17 @@ class SettingsDialog(QDialog):
         system_combo_layout.addWidget(system_label)
         
         self.system_combo = QComboBox()
-        self.system_combo.setStyleSheet("""
-            QComboBox {
-                border: 1px solid #ccc;
+        self.system_combo.setStyleSheet(f"""
+            QComboBox {{
+                border: 1px solid {colors['border']};
                 border-radius: 4px;
                 padding: 8px;
                 font-size: 12px;
                 min-width: 200px;
-            }
-            QComboBox:focus {
-                border-color: #2196f3;
-            }
+            }}
+            QComboBox:focus {{
+                border-color: {colors['highlight']};
+            }}
         """)
         self.populate_system_combo()
         system_combo_layout.addWidget(self.system_combo)
@@ -779,23 +788,23 @@ class SettingsDialog(QDialog):
         
         # Remove system button
         remove_system_btn = QPushButton("🗑️ Remove Selected System")
-        remove_system_btn.setStyleSheet("""
-            QPushButton {
-                background-color: #ff9800;
-                color: white;
+        remove_system_btn.setStyleSheet(f"""
+            QPushButton {{
+                background-color: {colors['warning']};
+                color: {colors['button_text']};
                 border: none;
                 border-radius: 6px;
                 padding: 10px 20px;
                 font-size: 12px;
                 font-weight: bold;
                 min-height: 16px;
-            }
-            QPushButton:hover {
-                background-color: #f57c00;
-            }
-            QPushButton:pressed {
-                background-color: #ef6c00;
-            }
+            }}
+            QPushButton:hover {{
+                background-color: {colors['warning_hover']};
+            }}
+            QPushButton:pressed {{
+                background-color: {colors['warning_pressed']};
+            }}
         """)
         remove_system_btn.clicked.connect(self.remove_selected_system)
         system_reset_layout.addWidget(remove_system_btn)
@@ -805,7 +814,7 @@ class SettingsDialog(QDialog):
             "ROM files will NOT be deleted."
         )
         remove_system_desc.setWordWrap(True)
-        remove_system_desc.setStyleSheet("color: #666; font-size: 11px; margin-left: 20px;")
+        remove_system_desc.setStyleSheet(f"color: {colors['secondary_text']}; font-size: 11px; margin-left: 20px;")
         system_reset_layout.addWidget(remove_system_desc)
         
         warning_layout.addWidget(system_reset_group)

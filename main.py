@@ -38,6 +38,7 @@ sys.path.insert(0, str(src_path))
 from PyQt6.QtWidgets import QApplication
 from PyQt6.QtCore import QDir
 from ui.main_window import MainWindow
+from ui.theme import Theme
 from core.settings_manager import SettingsManager
 from core.db_manager import DatabaseManager
 
@@ -52,10 +53,12 @@ def main():
     settings_manager = SettingsManager()
     db_manager = DatabaseManager(settings_manager.get_database_path())
     
-    # Create main window and apply theme globally
-    main_window = MainWindow(settings_manager, db_manager)
+    # Apply theme globally to the entire application
+    theme = Theme()
+    app.setStyleSheet(theme.get_stylesheet())
     
-    # The MainWindow now handles its own styling internally
+    # Create main window
+    main_window = MainWindow(settings_manager, db_manager)
     
     main_window.show()
     

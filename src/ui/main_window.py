@@ -47,6 +47,7 @@ from core.scanned_roms_manager import ScannedROMsManager
 from ui.settings_dialog import SettingsDialog
 from ui.progress_dialog import ProgressDialog
 from ui.drag_drop_list import DragDropListWidget, RegionFilterWidget
+from ui.theme import Theme
 
 class DATImportThread(QThread):
     """Thread for importing DAT files."""
@@ -126,273 +127,22 @@ class MainWindow(QMainWindow):
         self.current_scan_results = []
         self.ignored_crcs = set()  # Initialize as an empty set
         
-        self.apply_adobe_theme()
+        # Initialize theme
+        self.theme = Theme()
+        self.apply_theme()
         self.setup_ui()
         self.setup_menus()
         self.setup_status_bar()
         self.load_systems()
         self.restore_window_state()
         
-    def apply_adobe_theme(self):
-        """Apply an Adobe-like theme to the application."""
-        # Define Adobe-like color palette
-        self.colors = {
-            'background': '#2E2E2E',
-            'dark_gray': '#252525',
-            'medium_gray': '#3A3A3A',
-            'light_gray': '#4A4A4A',
-            'highlight': '#2D8CEB',  # Adobe blue
-            'highlight_hover': '#1A73E8',
-            'text': '#E6E6E6',
-            'secondary_text': '#BBBBBB',
-            'border': '#555555',
-            'success': '#4CAF50',
-            'warning': '#FFC107',
-            'error': '#F44336',
-            'button_text': '#FFFFFF'
-        }
-        
-        # Create application-wide stylesheet
-        self.qss = f"""
-        /* Global styles */
-        QWidget {{
-            background-color: {self.colors['background']};
-            color: {self.colors['text']};
-            font-family: 'Segoe UI', Arial, sans-serif;
-        }}
-        /* Main window */
-        QMainWindow {{  
-            background-color: {self.colors['background']};
-        }}
-        
-        /* Menu bar */
-        QMenuBar {{  
-            background-color: {self.colors['dark_gray']};
-            color: {self.colors['text']};
-            border-bottom: 1px solid {self.colors['border']};
-        }}
-        
-        QMenuBar::item {{  
-            background-color: transparent;
-            padding: 6px 10px;
-        }}
-        
-        QMenuBar::item:selected {{  
-            background-color: {self.colors['highlight']};
-        }}
-        
-        QMenu {{  
-            background-color: {self.colors['medium_gray']};
-            border: 1px solid {self.colors['border']};
-        }}
-        
-        QMenu::item {{  
-            padding: 6px 20px 6px 20px;
-        }}
-        
-        QMenu::item:selected {{  
-            background-color: {self.colors['highlight']};
-            color: black;
-        }}
-        
-        /* Status bar */
-        QStatusBar {{  
-            background-color: {self.colors['dark_gray']};
-            color: {self.colors['secondary_text']};
-            border-top: 1px solid {self.colors['border']};
-        }}
-        
-        /* Group boxes */
-        QGroupBox {{  
-            border: 1px solid {self.colors['border']};
-            border-radius: 4px;
-            margin-top: 12px;
-            font-weight: bold;
-            padding-top: 10px;
-        }}
-        
-        QGroupBox::title {{  
-            subcontrol-origin: margin;
-            left: 10px;
-            padding: 0 5px;
-        }}
-        
-        /* Buttons */
-        QPushButton {{  
-            background-color: {self.colors['medium_gray']};
-            color: {self.colors['button_text']};
-            border: none;
-            border-radius: 4px;
-            padding: 8px 16px;
-            font-weight: bold;
-            min-height: 30px;
-        }}
-        
-        QPushButton:hover {{  
-            background-color: {self.colors['light_gray']};
-        }}
-        
-        QPushButton:pressed {{  
-            background-color: {self.colors['highlight']};
-        }}
-        
-        /* Premium action buttons */
-        #premium_button {{  
-            background-color: {self.colors['highlight']};
-            color: white;
-            border: none;
-            border-radius: 4px;
-            padding: 10px 20px;
-            font-weight: bold;
-            min-height: 36px;
-            font-size: 13px;
-        }}
-        
-        #premium_button:hover {{  
-            background-color: {self.colors['highlight_hover']};
-            /* Remove box-shadow property */
-        }}
-        
-        /* Tree widgets */
-        QTreeWidget {{  
-            background-color: {self.colors['dark_gray']};
-            alternate-background-color: {self.colors['medium_gray']};
-            border: 1px solid {self.colors['border']};
-            border-radius: 4px;
-        }}
-        
-        QTreeWidget::item {{  
-            padding: 4px;
-        }}
-        
-        QTreeWidget::item:selected {{  
-            background-color: {self.colors['highlight']};
-            color: black;
-        }}
-        
-        QHeaderView::section {{  
-            background-color: {self.colors['medium_gray']};
-            color: {self.colors['text']};
-            padding: 6px;
-            border: none;
-            border-right: 1px solid {self.colors['border']};
-            border-bottom: 1px solid {self.colors['border']};
-        }}
-        
-        /* Combo box */
-        QComboBox {{  
-            background-color: {self.colors['medium_gray']};
-            border: 1px solid {self.colors['border']};
-            border-radius: 4px;
-            padding: 6px;
-            min-height: 30px;
-        }}
-        
-        QComboBox::drop-down {{  
-            subcontrol-origin: padding;
-            subcontrol-position: top right;
-            width: 20px;
-            border-left: 1px solid {self.colors['border']};
-        }}
-        
-        QComboBox QAbstractItemView {{  
-            background-color: {self.colors['medium_gray']};
-            border: 1px solid {self.colors['border']};
-        }}
-        
-        /* Tabs */
-        QTabWidget::pane {{  
-            border: 1px solid {self.colors['border']};
-            border-radius: 4px;
-        }}
-        
-        QTabBar::tab {{  
-            background-color: {self.colors['medium_gray']};
-            color: {self.colors['text']};
-            border: 1px solid {self.colors['border']};
-            border-bottom: none;
-            border-top-left-radius: 4px;
-            border-top-right-radius: 4px;
-            padding: 8px 12px;
-            min-width: 100px;
-        }}
-        
-        QTabBar::tab:selected {{  
-            background-color: {self.colors['highlight']};
-        }}
-        
-        /* Scrollbars */
-        QScrollBar:vertical {{  
-            background-color: {self.colors['dark_gray']};
-            width: 12px;
-            margin: 0;
-        }}
-        
-        QScrollBar::handle:vertical {{  
-            background-color: {self.colors['light_gray']};
-            min-height: 20px;
-            border-radius: 6px;
-        }}
-        
-        QScrollBar::add-line:vertical, QScrollBar::sub-line:vertical {{  
-            height: 0px;
-        }}
-        
-        QScrollBar:horizontal {{  
-            background-color: {self.colors['dark_gray']};
-            height: 12px;
-            margin: 0;
-        }}
-        
-        QScrollBar::handle:horizontal {{  
-            background-color: {self.colors['light_gray']};
-            min-width: 20px;
-            border-radius: 6px;
-        }}
-        
-        QScrollBar::add-line:horizontal, QScrollBar::sub-line:horizontal {{  
-            width: 0px;
-        }}
-        
-        /* Checkboxes */
-        QCheckBox {{  
-            spacing: 8px;
-        }}
-        
-        QCheckBox::indicator {{  
-            width: 18px;
-            height: 18px;
-            border: 1px solid {self.colors['border']};
-            border-radius: 3px;
-            background-color: {self.colors['medium_gray']};
-        }}
-        
-        QCheckBox::indicator:checked {{  
-            background-color: {self.colors['highlight']};
-        }}
-        
-        /* Progress bar */
-        QProgressBar {{  
-            border: 1px solid {self.colors['border']};
-            border-radius: 4px;
-            background-color: {self.colors['dark_gray']};
-            text-align: center;
-            color: {self.colors['text']};
-        }}
-        
-        QProgressBar::chunk {{  
-            background-color: {self.colors['highlight']};
-            width: 10px;
-            margin: 0.5px;
-        }}
-        
-        /* Text edit */
-        QTextEdit {{  
-            background-color: {self.colors['dark_gray']};
-            border: 1px solid {self.colors['border']};
-            border-radius: 4px;
-        }}
-        """
+    def apply_theme(self):
+        """Apply the application theme."""
+        # Get stylesheet from theme and apply it
+        self.qss = self.theme.get_stylesheet()
+        self.setStyleSheet(self.qss)
+        # Get colors for backward compatibility
+        self.colors = self.theme.get_colors()
     
     def get_stylesheet(self):
         """Get the application stylesheet."""
@@ -444,6 +194,9 @@ class MainWindow(QMainWindow):
         # Main content area
         content_splitter = QSplitter(Qt.Orientation.Horizontal)
         
+        # Set central widget background using theme colors
+        central_widget.setStyleSheet(f"QWidget {{ background-color: {self.theme.colors['central_widget']}; }}")
+        
         # Left panel - DAT games
         left_panel = self.create_dat_panel()
         content_splitter.addWidget(left_panel)
@@ -459,6 +212,10 @@ class MainWindow(QMainWindow):
         # Bottom panel - Filters and actions
         bottom_panel = self.create_bottom_panel()
         main_layout.addWidget(bottom_panel)
+        
+        # Apply styling using theme colors
+        self.setStyleSheet(f"QMainWindow {{ background-color: {self.theme.colors['background']}; padding: 1%; }}")
+        bottom_panel.setStyleSheet("QWidget { background-color: transparent; }")
     
     def create_dat_panel(self) -> QWidget:
         """Create the DAT games panel."""
@@ -705,20 +462,7 @@ class MainWindow(QMainWindow):
         
         # Filter panel with improved styling
         filter_group = QGroupBox("🔍 Filters")
-        filter_group.setStyleSheet("""
-            QGroupBox {
-                font-weight: bold;
-                border: 2px solid #cccccc;
-                border-radius: 8px;
-                margin-top: 10px;
-                padding-top: 10px;
-            }
-            QGroupBox::title {
-                subcontrol-origin: margin;
-                left: 10px;
-                padding: 0 5px 0 5px;
-            }
-        """)
+        filter_group.setObjectName("filter_group")
         filter_layout = QHBoxLayout(filter_group)  # Changed to horizontal
         filter_layout.setSpacing(15)
         
@@ -745,34 +489,34 @@ class MainWindow(QMainWindow):
         lang_button_layout = QHBoxLayout()
         self.select_all_languages_button = QPushButton("✅ Select All")
         self.select_all_languages_button.clicked.connect(self.select_all_languages)
-        self.select_all_languages_button.setStyleSheet("""
-            QPushButton {
-                background-color: #2196F3;
-                color: white;
+        self.select_all_languages_button.setStyleSheet(f"""
+            QPushButton {{
+                background-color: {self.colors['highlight']};
+                color: {self.colors['button_text']};
                 border: none;
                 padding: 4px 8px;
                 border-radius: 4px;
                 font-size: 10px;
-            }
-            QPushButton:hover {
-                background-color: #1976D2;
-            }
+            }}
+            QPushButton:hover {{
+                background-color: {self.colors['highlight_hover']};
+            }}
         """)
         
         self.clear_all_languages_button = QPushButton("❌ Clear All")
         self.clear_all_languages_button.clicked.connect(self.clear_all_languages)
-        self.clear_all_languages_button.setStyleSheet("""
-            QPushButton {
-                background-color: #f44336;
-                color: white;
+        self.clear_all_languages_button.setStyleSheet(f"""
+            QPushButton {{
+                background-color: {self.colors['error']};
+                color: {self.colors['button_text']};
                 border: none;
                 padding: 4px 8px;
                 border-radius: 4px;
                 font-size: 10px;
-            }
-            QPushButton:hover {
-                background-color: #d32f2f;
-            }
+            }}
+            QPushButton:hover {{
+                background-color: {self.colors['error_hover']};
+            }}
         """)
         
         lang_button_layout.addWidget(self.select_all_languages_button)
@@ -838,34 +582,34 @@ class MainWindow(QMainWindow):
         
         self.select_all_types_button = QPushButton("✅ Select All Types")
         self.select_all_types_button.clicked.connect(self.select_all_game_types)
-        self.select_all_types_button.setStyleSheet("""
-            QPushButton {
-                background-color: #2196F3;
-                color: white;
+        self.select_all_types_button.setStyleSheet(f"""
+            QPushButton {{
+                background-color: {self.colors['highlight']};
+                color: {self.colors['button_text']};
                 border: none;
                 padding: 8px 16px;
                 border-radius: 4px;
                 font-weight: bold;
-            }
-            QPushButton:hover {
-                background-color: #1976D2;
-            }
+            }}
+            QPushButton:hover {{
+                background-color: {self.colors['highlight_hover']};
+            }}
         """)
         
         self.clear_all_types_button = QPushButton("❌ Clear All Types")
         self.clear_all_types_button.clicked.connect(self.clear_all_game_types)
-        self.clear_all_types_button.setStyleSheet("""
-            QPushButton {
-                background-color: #f44336;
-                color: white;
+        self.clear_all_types_button.setStyleSheet(f"""
+            QPushButton {{
+                background-color: {self.colors['error']};
+                color: {self.colors['button_text']};
                 border: none;
                 padding: 8px 16px;
                 border-radius: 4px;
                 font-weight: bold;
-            }
-            QPushButton:hover {
-                background-color: #d32f2f;
-            }
+            }}
+            QPushButton:hover {{
+                background-color: {self.colors['error_hover']};
+            }}
         """)
         
         button_layout.addWidget(self.select_all_types_button)
