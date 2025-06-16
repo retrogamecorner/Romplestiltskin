@@ -622,8 +622,24 @@ class Theme:
             base_style = self.get_button_style("QMainButton")
             return base_style.replace(f"background-color: {self.colors['button']};", f"background-color: {self.colors['button_hover']};")
         elif style_type == "ClearButton":
-            base_style = self.get_button_style("QMainButton")
-            return base_style.replace(f"background-color: {self.colors['button']};", "background-color: #6b211e;").replace(f"border: 1px solid {self.colors['border']};", "border: 1px solid #6b211e;")
+            return f"""
+                QPushButton {{
+                    background-color: #6b211e;
+                    color: {self.colors['button_text']};
+                    border: 1px solid #6b211e;
+                    border-radius: 8px;
+                    padding: 5px 15px;
+                    font-family: 'Segoe UI', Arial, sans-serif;
+                    font-weight: normal;
+                    font-size: {self.fonts['size_normal']}px;
+                }}
+                QPushButton:hover {{
+                    background-color: #7a2622;
+                }}
+                QPushButton:pressed {{
+                    background-color: #5c1e1a;
+                }}
+            """
         elif style_type == "SelectAllButton":
             return f"""
                 QPushButton {{
