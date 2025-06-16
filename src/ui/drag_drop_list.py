@@ -331,12 +331,14 @@ class RegionFilterWidget(QWidget):
         buttons_layout.addStretch()
         
         self.ignore_button = QPushButton("⮞")
+        self.ignore_button.setObjectName("ignore_button")
         self.ignore_button.setToolTip("Move to ignore list")
         self.ignore_button.setStyleSheet(self.theme.get_button_style("CircularMoveButton"))
         self.ignore_button.clicked.connect(self.move_to_ignore)
         buttons_layout.addWidget(self.ignore_button)
         
         self.restore_button = QPushButton("⮜")
+        self.restore_button.setObjectName("restore_button")
         self.restore_button.setToolTip("Restore from ignore list")
         self.restore_button.setStyleSheet(self.theme.get_button_style("CircularMoveButton"))
         self.restore_button.clicked.connect(self.move_to_available)

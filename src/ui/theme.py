@@ -323,6 +323,8 @@ class Theme:
             min-width: {self.dimensions['button_min_width']}px;
         }}
         
+
+        
         QPushButton:hover {{
             background-color: {self.colors['light_gray']};
         }}
@@ -600,7 +602,7 @@ class Theme:
         elif style_type == "QMainButton":
             return f"""
                 QPushButton {{
-                    background-color: {self.colors['button']};
+                    background-color: #383838;
                     color: {self.colors['button_text']};
                     border: 1px solid {self.colors['border']};
                     border-radius: 8px;
@@ -609,8 +611,11 @@ class Theme:
                     font-weight: normal;
                     font-size: {self.fonts['size_normal']}px;
                 }}
+                QPushButton:hover {{
+                    background-color: #484848;
+                }}
                 QPushButton:pressed {{
-                    background-color: {self.colors['button_hover']};
+                    background-color: #282828;
                 }}
             """
         elif style_type == "ScanButton":
@@ -663,15 +668,17 @@ class Theme:
                     background-color: #6b211e;
                     color: {self.colors['button_text']};
                     border: none;
-                    border-radius: 15px;
-                    width: 30px;
-                    height: 30px;
-                    max-width: 30px;
-                    max-height: 30px;
-                    min-width: 30px;
-                    min-height: 30px;
+                    border-radius: 10px !important;
+                    padding: 0px;
+                    width: 20px;
+                    height: 20px;
+                    max-width: 20px;
+                    max-height: 20px;
+                    min-width: 20px;
+                    min-height: 20px;
                     margin: 0px;
-                    font-size: 16px;
+                    font-size: 10px;
+                    font-weight: normal;
                 }}
                 QPushButton:hover {{
                     background-color: #7a2622;
@@ -1210,13 +1217,18 @@ class Theme:
                 font-weight: {self.fonts['weight_bold']};
                 border: 2px solid {self.colors['border']};
                 border-radius: {self.dimensions['border_radius_medium']}px;
-                margin-top: {self.spacing['medium']}px;
-                padding-top: {self.spacing['medium']}px;
+                padding: 30px 0px 10px 0px; /* Increased top padding to 40px */
             }}
             QGroupBox::title {{
-                subcontrol-origin: margin;
-                left: {self.spacing['medium']}px;
-                padding: 0 {self.spacing['small']}px 0 {self.spacing['small']}px;
+                subcontrol-origin: padding; /* Changed from margin to padding */
+                subcontrol-position: top left;
+                left: {self.spacing['small']}px; /* Adjusted left padding */
+                padding: 10px {self.spacing['small']}px 0px {self.spacing['small']}px; 
+            }}
+            QFrame#horizontalLine {{
+                min-height: 2px;
+                max-height: 2px;
+                background-color: #484848;
             }}
         """
     

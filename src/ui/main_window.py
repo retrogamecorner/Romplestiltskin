@@ -15,7 +15,7 @@ from PyQt6.QtWidgets import (
     QTreeWidget, QTreeWidgetItem, QTreeWidgetItemIterator, QComboBox, QLabel, QPushButton,
     QProgressBar, QStatusBar, QMenuBar, QMenu, QFileDialog,
     QMessageBox, QGroupBox, QCheckBox, QListWidget, QListWidgetItem,
-    QTabWidget, QTextEdit, QSpinBox, QLineEdit, QScrollArea, QApplication
+    QTabWidget, QTextEdit, QSpinBox, QLineEdit, QScrollArea, QApplication, QFrame
 )
 from PyQt6.QtCore import Qt, QThread, pyqtSignal, QTimer, QByteArray
 from PyQt6.QtGui import QAction, QIcon, QColor, QFont
@@ -568,9 +568,17 @@ class MainWindow(QMainWindow):
         layout.addWidget(filter_group)
         
         # Actions panel with premium styling
-        actions_group = QGroupBox("🛠️ Actions")
+        actions_group = QGroupBox("Actions")
         actions_group.setStyleSheet(self.theme.get_actions_group_style())
         actions_layout = QVBoxLayout(actions_group)
+
+        # Add a QFrame as a horizontal line separator
+        line_separator = QFrame()
+        line_separator.setObjectName("horizontalLine") # For styling
+        line_separator.setFrameShape(QFrame.HLine) # Set shape, though styling will override visual
+        line_separator.setFrameShadow(QFrame.Sunken) # Set shadow, though styling will override visual
+        actions_layout.addWidget(line_separator)
+
         actions_layout.setSpacing(10)
         
         self.rename_button = QPushButton("Rename Wrong Filenames")
