@@ -11,6 +11,7 @@ class Theme:
         """Initialize theme with default dark colors, dimensions, and layout properties."""
         self.colors = {
             'background': '#1a1a1a',
+            'main_window': '#1a1a1a',  # Same as background
             'central_widget': '#2c2c2c',
             'dark_gray': '#0f0f0f',
             'medium_gray': '#2a2a2a',
@@ -18,11 +19,13 @@ class Theme:
             'highlight': '#4a9eff',
             'highlight_hover': '#3a8eef',
             'highlight_pressed': '#2a7edf',
+            'primary': '#4a9eff',  # Same as highlight
             'secondary': '#757575',
             'secondary_hover': '#616161',
             'secondary_pressed': '#424242',
             'text': '#d1d1d1',
             'secondary_text': '#a1a1a1',
+            'muted_text': '#757575',  # Same as secondary
             'border': '#404040',
             'success': '#4CAF50',
             'warning': '#FFC107',
@@ -31,7 +34,12 @@ class Theme:
             'error': '#F44336',
             'error_hover': '#d32f2f',
             'error_pressed': '#b71c1c',
+            'button': '#2a2a2a',  # Same as medium_gray
+            'button_hover': '#3a3a3a',  # Same as light_gray
             'button_text': '#ffffff',
+            'selection': '#4a9eff',  # Same as highlight
+            'shadow': '#1a1a1a',  # Dark shadow color for button effects
+            'group_bg': '#3e3e3e',  # Added missing group background color
             # Tree item colors
             'tree_item_correct_bg': '#c8ffc8',  # Light green (200, 255, 200)
             'tree_item_correct_text': '#000000',  # Black text (0, 0, 0)
@@ -211,7 +219,7 @@ class Theme:
         
         /* Main window */
         QMainWindow {{
-            background-color: #1a1a1a;
+            background-color: {self.colors['main_window']};
             border: 2px solid {self.colors['border']};
         }}
         
@@ -272,6 +280,7 @@ class Theme:
         
         /* Group boxes */
         QGroupBox {{
+            background: {self.colors['group_bg']}; /* Ensure this is #3e3e3e */
             border: {self.dimensions['border_width']}px solid {self.colors['border']};
             border-radius: {self.dimensions['border_radius']}px;
             margin-top: {self.layout['group_margin_top']}px;
@@ -282,6 +291,7 @@ class Theme:
         
         /* Filter group boxes with enhanced styling */
         QGroupBox[objectName="filter_group"] {{
+            background: {self.colors['group_bg']}; /* Ensure this is #3e3e3e */
             border: {self.dimensions['border_width_thick']}px solid {self.colors['border']};
             border-radius: {self.dimensions['border_radius_large']}px;
             margin-top: {self.layout['filter_group_margin_top']}px;
@@ -529,7 +539,7 @@ class Theme:
         QCheckBox::indicator {{
             width: 16px;
             height: 16px;
-            border: 1px solid #3e3e3e;
+            border: 1px solid {self.colors['group_bg']};
             border-radius: 0px;
             background-color: {self.colors['medium_gray']};
         }}
@@ -537,7 +547,7 @@ class Theme:
         QCheckBox::indicator:checked {{
             width: 16px;
             height: 16px;
-            border: 1px solid #3e3e3e;
+            border: 1px solid {self.colors['group_bg']};
             border-radius: 0px;
             background-color: {self.colors['medium_gray']};
             image: url(src/ui/flags/checkmark.svg);
@@ -553,7 +563,7 @@ class Theme:
                     background-color: {self.colors['highlight']};
                     color: {self.colors['text']};
                     border: none;
-                    border-radius: {self.dimensions['border_radius_large']}px;
+                    border-radius: {self.dimensions['border_radius']}px;
                     padding: {self.layout['button_padding']};
                     font-size: {self.fonts['size_normal']}px;
                     font-weight: {self.fonts['weight_bold']};
@@ -573,7 +583,7 @@ class Theme:
                     background-color: {self.colors['error']};
                     color: {self.colors['text']};
                     border: none;
-                    border-radius: {self.dimensions['border_radius_large']}px;
+                    border-radius: {self.dimensions['border_radius']}px;
                     padding: {self.layout['button_padding']};
                     font-size: {self.fonts['size_normal']}px;
                     font-weight: {self.fonts['weight_bold']};
@@ -590,53 +600,84 @@ class Theme:
         elif style_type == "QMainButton":
             return f"""
                 QPushButton {{
-                    background-color: #252525;
-                    color: #d6d6d6;
-                    border: 1px solid #3b3b3b;
+                    background-color: {self.colors['button']};
+                    color: {self.colors['button_text']};
+                    border: 1px solid {self.colors['border']};
                     border-radius: 8px;
                     padding: 5px 15px;
                     font-family: 'Segoe UI', Arial, sans-serif;
                     font-weight: normal;
                     font-size: {self.fonts['size_normal']}px;
                 }}
+                QPushButton:pressed {{
+                    background-color: {self.colors['button_hover']};
+                }}
             """
         elif style_type == "ScanButton":
             base_style = self.get_button_style("QMainButton")
-            return base_style.replace("background-color: #252525;", "background-color: #383838;")
+            return base_style.replace(f"background-color: {self.colors['button']};", f"background-color: {self.colors['button_hover']};")
         elif style_type == "ClearButton":
             base_style = self.get_button_style("QMainButton")
-            return base_style.replace("background-color: #252525;", "background-color: #6b211e;").replace("border: 1px solid #3b3b3b;", "border: 1px solid #6b211e;")
+            return base_style.replace(f"background-color: {self.colors['button']};", "background-color: #6b211e;").replace(f"border: 1px solid {self.colors['border']};", "border: 1px solid #6b211e;")
         elif style_type == "SelectAllButton":
-            base_style = self.get_button_style("QMainButton")
-            return base_style.replace("border: 1px solid #3b3b3b;", "border: none;\n                    border-right: 1px solid #1a1a1a;\n                    border-bottom: 1px solid #1a1a1a;").replace("padding: 5px 15px;", "padding: 1px 3px !important;\n                    line-height: 1.0;\n                    min-height: 20px;")
+            return f"""
+                QPushButton {{
+                    background-color: {self.colors['button']};
+                    color: {self.colors['button_text']};
+                    border: 1px solid {self.colors['border']};
+                    border-radius: 8px;
+                    padding: 1px 3px;
+                    font-family: 'Segoe UI', Arial, sans-serif;
+                    font-weight: normal;
+                    font-size: {self.fonts['size_normal']}px;
+                }}
+                QPushButton:hover {{
+                    background-color: {self.colors['button_hover']};
+                }}
+                QPushButton:pressed {{
+                    background-color: {self.colors['button_hover']};
+                }}
+            """
         elif style_type == "ClearAllButton":
-            base_style = self.get_button_style("QMainButton")
-            return base_style.replace("background-color: #252525;", "background-color: #6b211e;").replace("border: 1px solid #3b3b3b;", "border: none;\n                    border-right: 1px solid #4a1815;\n                    border-bottom: 1px solid #4a1815;").replace("padding: 5px 15px;", "padding: 2px 8px !important;\n                    line-height: 1.0;\n                    min-height: 20px;")
+            return f"""
+                QPushButton {{
+                    background-color: #6b211e;
+                    color: {self.colors['button_text']};
+                    border: 1px solid #6b211e;
+                    border-radius: 8px;
+                    padding: 1px 3px;
+                    font-family: 'Segoe UI', Arial, sans-serif;
+                    font-weight: normal;
+                    font-size: {self.fonts['size_normal']}px;
+                }}
+                QPushButton:hover {{
+                    background-color: #7a2622;
+                }}
+                QPushButton:pressed {{
+                    background-color: #5c1e1a;
+                }}
+            """
         elif style_type == "CircularMoveButton":
             return f"""
                 QPushButton {{
                     background-color: #6b211e;
-                    color: #d6d6d6;
+                    color: {self.colors['button_text']};
                     border: none;
-                    border-radius: 10px;
-                    width: 20px;
-                    height: 20px;
-                    max-width: 20px;
-                    max-height: 20px;
-                    min-width: 20px;
-                    min-height: 20px;
-                    font-family: 'Segoe UI', Arial, sans-serif;
-                    font-weight: bold;
-                    font-size: 10px;
-                    text-align: center;
-                    padding: 0px;
+                    border-radius: 15px;
+                    width: 30px;
+                    height: 30px;
+                    max-width: 30px;
+                    max-height: 30px;
+                    min-width: 30px;
+                    min-height: 30px;
                     margin: 0px;
+                    font-size: 16px;
                 }}
                 QPushButton:hover {{
-                    background-color: #7d2621;
+                    background-color: #7a2622;
                 }}
                 QPushButton:pressed {{
-                    background-color: #5a1c19;
+                    background-color: #5c1e1a;
                 }}
             """
         else:
@@ -791,7 +832,8 @@ class Theme:
     def get_settings_danger_group_style(self):
         """Get danger zone group box style for settings dialog."""
         return f"""
-            QGroupBox {{
+            QGroupBox {{{{
+                background: {self.colors['group_bg']};
                 font-weight: {self.fonts['weight_bold']};
                 font-size: 14px;
                 color: {self.colors['error']};
@@ -856,6 +898,7 @@ class Theme:
         """Get standard group box style for settings dialog."""
         return f"""
             QGroupBox {{
+                background: {self.colors['group_bg']};
                 font-weight: {self.fonts['weight_bold']};
                 font-size: 14px;
                 border: 2px solid {self.colors['border']};
@@ -892,11 +935,11 @@ class Theme:
         """Get combo box style for system selection."""
         return f"""
             QComboBox {{
-                background-color: #3e3e3e;
-                border: 1px solid #474747;
+                background-color: {self.colors['group_bg']};
+                border: 1px solid {self.colors['border']};
                 border-radius: {self.dimensions['border']['radius']}px;
                 padding: {self.layout['input_padding']};
-                color: #d6d6d6;
+                color: {self.colors['text']};
                 min-height: {self.dimensions['widget']['combo_min_height']}px;
             }}
             
@@ -905,7 +948,7 @@ class Theme:
                 subcontrol-position: top right;
                 width: 20px;
                 border: none;
-                background-color: #3e3e3e;
+                background-color: {self.colors['group_bg']};
             }}
             
             QComboBox::down-arrow {{
@@ -918,10 +961,10 @@ class Theme:
             }}
             
             QComboBox QAbstractItemView {{
-                background-color: #3e3e3e;
-                border: 1px solid #474747;
-                color: #d6d6d6;
-                selection-background-color: #474747;
+                background-color: {self.colors['group_bg']};
+                border: 1px solid {self.colors['border']};
+                color: {self.colors['text']};
+                selection-background-color: {self.colors['selection']};
             }}
         """
     
@@ -1163,6 +1206,7 @@ class Theme:
         """Get style for actions group box."""
         return f"""
             QGroupBox {{
+                background: {self.colors['group_bg']};
                 font-weight: {self.fonts['weight_bold']};
                 border: 2px solid {self.colors['border']};
                 border-radius: {self.dimensions['border_radius_medium']}px;
