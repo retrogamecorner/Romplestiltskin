@@ -525,41 +525,24 @@ class Theme:
             color: {self.colors['text']};
         }}
         
-        /* Check box */
-        QCheckBox {{
-            color: {self.colors['text']};
-            spacing: {self.spacing['small']}px;
-        }}
-        
+        /* Checkbox */
         QCheckBox::indicator {{
-            width: {self.dimensions['checkbox_size']}px;
-            height: {self.dimensions['checkbox_size']}px;
-            border: {self.dimensions['border_width']}px solid {self.colors['border']};
-            border-radius: {self.dimensions['border_radius_small']}px;
+            width: 16px;
+            height: 16px;
+            border: 1px solid #3e3e3e;
+            border-radius: 0px;
             background-color: {self.colors['medium_gray']};
         }}
         
         QCheckBox::indicator:checked {{
-            background-color: {self.colors['highlight']};
-        }}
-        
-        /* Radio button */
-        QRadioButton {{
-            color: {self.colors['text']};
-            spacing: {self.spacing['small']}px;
-        }}
-        
-        QRadioButton::indicator {{
-            width: {self.dimensions['radio_size']}px;
-            height: {self.dimensions['radio_size']}px;
-            border: {self.dimensions['border_width']}px solid {self.colors['border']};
-            border-radius: {self.dimensions['radio_size']//2}px;
+            width: 16px;
+            height: 16px;
+            border: 1px solid #3e3e3e;
+            border-radius: 0px;
             background-color: {self.colors['medium_gray']};
+            image: url(src/ui/flags/checkmark.svg);
         }}
         
-        QRadioButton::indicator:checked {{
-            background-color: {self.colors['highlight']};
-        }}
         """
     
     def get_button_style(self, style_type="default"):
