@@ -8,7 +8,7 @@ class Theme:
     """Theme class to manage application styling."""
     
     def __init__(self):
-        """Initialize theme with default dark colors."""
+        """Initialize theme with default dark colors, dimensions, and layout properties."""
         self.colors = {
             'background': '#1a1a1a',
             'central_widget': '#2c2c2c',
@@ -31,7 +31,171 @@ class Theme:
             'error': '#F44336',
             'error_hover': '#d32f2f',
             'error_pressed': '#b71c1c',
-            'button_text': '#ffffff'
+            'button_text': '#ffffff',
+            # Tree item colors
+            'tree_item_correct_bg': '#c8ffc8',  # Light green (200, 255, 200)
+            'tree_item_correct_text': '#000000',  # Black text (0, 0, 0)
+            # Drag and drop colors
+            'drag_drop': {
+                'highlight_border': '#d6d6d6',  # Color for the drop indicator line
+                'highlight_background': 'rgba(0, 120, 212, 0.1)', # Retained for now, might be unused
+                'available_bg': '#3A3A3A',
+                'available_item': 'transparent',
+                'available_text': '#d6d6d6',
+                'available_selected_bg': '#3A3A3A',  # Same as available_bg
+                'available_hover_bg': '#3A3A3A', # Same as available_bg to avoid color change
+                'available_hover_text': '#d6d6d6', # Same as available_text to avoid color change
+                'ignored_hover_bg': '#4b3737',  # Same as ignored_bg to avoid color change
+                'ignored_hover_text': '#d99595', # Same as ignored_text to avoid color change
+                'ignored_bg': '#4b3737',
+                'ignored_item': 'transparent',
+                'ignored_selected_bg': '#4b3737',  # Same as ignored_bg
+                'ignored_text': '#d99595'
+            },
+            # Progress dialog colors
+            'progress_dialog': {
+                'details_text': '#757575',  # Gray color for details text
+                'details_font_size': '10px'
+            }
+        }
+        
+        # Dimensions for widgets (organized by category)
+        self.dimensions = {
+            'widget': {
+                'button_min_height': 30,
+                'button_min_width': 80,
+                'premium_button_min_height': 36,
+                'input_min_height': 30,
+                'combo_min_height': 30,
+                'tree_header_height': 25,
+                'list_item_height': 24,
+                'checkbox_size': 16,
+                'radio_size': 16,
+                'scrollbar_width': 12,
+                'scrollbar_handle_min': 20
+            },
+            'border': {
+                'radius': 4,
+                'radius_large': 8,
+                'radius_medium': 6,
+                'radius_small': 3,
+                'width': 1,
+                'width_thick': 2
+            },
+            'main_window': {
+                'combo_minimum_width': 300,
+                'tree_minimum_height': 250,
+                'tree_maximum_height': 300,
+                'dat_tree_minimum_height': 300,
+                'dat_tree_maximum_height': 350,
+                'panel_maximum_height': 300,
+                'language_scroll_maximum_height': 120,
+                'min_width': 1400,
+                'min_height': 900
+            },
+            'settings_dialog': {
+                'list_maximum_height': 120,
+                'width': 600,
+                'height': 500
+            },
+            'progress_dialog': {
+                'log_max_height': 100,
+                'width': 400,
+                'height': 200,
+                'expanded_height': 300
+            },
+            # Legacy flat structure for backward compatibility
+            'button_min_height': 30,
+            'button_min_width': 80,
+            'premium_button_min_height': 36,
+            'input_min_height': 30,
+            'combo_min_height': 30,
+            'tree_header_height': 25,
+            'list_item_height': 24,
+            'checkbox_size': 16,
+            'radio_size': 16,
+            'scrollbar_width': 12,
+            'scrollbar_handle_min': 20,
+            'border_radius': 4,
+            'border_radius_large': 8,
+            'border_radius_medium': 6,
+            'border_radius_small': 3,
+            'border_width': 1,
+            'border_width_thick': 2,
+            'combo_minimum_width': 300,
+            'tree_minimum_height': 250,
+            'tree_maximum_height': 300,
+            'dat_tree_minimum_height': 300,
+            'dat_tree_maximum_height': 350,
+            'panel_maximum_height': 300,
+            'language_scroll_maximum_height': 120,
+            'settings_list_maximum_height': 120,
+            'settings_dialog_width': 600,
+            'settings_dialog_height': 500,
+            'progress_log_max_height': 100,
+            'main_window_min_width': 1400,
+            'main_window_min_height': 900,
+            'progress_dialog_width': 400,
+            'progress_dialog_height': 200,
+            'progress_dialog_expanded_height': 300
+        }
+        
+        # Spacing and padding values
+        self.spacing = {
+            'tiny': 2,
+            'small': 4,
+            'medium': 6,
+            'large': 8,
+            'xlarge': 10,
+            'xxlarge': 12,
+            'huge': 16,
+            'massive': 20
+        }
+        
+        # Layout margins and padding
+        self.layout = {
+            'window_padding': '1%',
+            'main_window_margins': 15,
+            'dialog_margin': 10,
+            'group_margin_top': 12,
+            'filter_group_margin_top': 10,
+            'title_padding': '0 5px',
+            'title_left_offset': 10,
+            'button_padding': '8px 16px',
+            'premium_button_padding': '10px 20px',
+            'input_padding': '6px',
+            'item_padding': '4px',
+            'menu_item_padding': '6px 10px',
+            'menu_item_full_padding': '6px 20px 6px 20px',
+            'tab_padding': '8px 16px',
+            'header_padding': '6px',
+            # Column widths for tree widgets
+            'tree_index_column_width': 50,
+            'tree_name_column_width': 300,
+            # Stats label styling
+            'stats_label_padding': '5px',
+            # Settings dialog specific layout
+            'settings_contents_margins': '20px 20px 20px 20px',
+            'settings_tab_spacing': 20,
+            'settings_group_spacing': 15,
+            'settings_button_spacing': 10,
+            'settings_modern_button_padding': '8px 16px',
+            'settings_secondary_button_padding': '8px 16px',
+            'settings_danger_button_padding': '12px 24px',
+            'settings_warning_button_padding': '10px 20px',
+            'help_text_font_size': '10px',
+            'help_text_margin': '20px'
+        }
+        
+        # Font properties
+        self.fonts = {
+            'family': "'Segoe UI', Arial, sans-serif",
+            'size_small': 11,
+            'size_normal': 12,
+            'size_medium': 13,
+            'size_large': 14,
+            'weight_normal': 'normal',
+            'weight_bold': 'bold'
         }
     
     def get_stylesheet(self):
@@ -41,13 +205,20 @@ class Theme:
         QWidget {{
             background-color: {self.colors['background']};
             color: {self.colors['text']};
-            font-family: 'Segoe UI', Arial, sans-serif;
+            font-family: {self.fonts['family']};
+            font-size: {self.fonts['size_normal']}px;
         }}
         
         /* Main window */
         QMainWindow {{
+            background-color: #1a1a1a;
+            border: 2px solid {self.colors['border']};
+        }}
+        
+        /* Central widget to show padding */
+        QMainWindow > QWidget {{
             background-color: {self.colors['background']};
-            padding: 1%;
+            border-radius: {self.dimensions['border_radius']}px;
         }}
         
         /* Dialog windows */
@@ -58,14 +229,20 @@ class Theme:
         
         /* Menu bar */
         QMenuBar {{
-            background-color: transparent;
+            background-color: {self.colors['background']};
             color: {self.colors['text']};
-            border-bottom: 1px solid {self.colors['border']};
+            margin: 0px;
+            padding-left: 0px;
+            padding-right: 0px;
+            padding-top: 0px;
+            padding-bottom: 0px;
         }}
         
         QMenuBar::item {{
             background-color: transparent;
-            padding: 6px 10px;
+            padding: {self.layout['menu_item_padding']};
+            margin: 0px;
+            border: none;
         }}
         
         QMenuBar::item:selected {{
@@ -74,11 +251,11 @@ class Theme:
         
         QMenu {{
             background-color: {self.colors['medium_gray']};
-            border: 1px solid {self.colors['border']};
+            border: {self.dimensions['border_width']}px solid {self.colors['border']};
         }}
         
         QMenu::item {{
-            padding: 6px 20px 6px 20px;
+            padding: {self.layout['menu_item_full_padding']};
         }}
         
         QMenu::item:selected {{
@@ -90,32 +267,32 @@ class Theme:
         QStatusBar {{
             background-color: {self.colors['dark_gray']};
             color: {self.colors['secondary_text']};
-            border-top: 1px solid {self.colors['border']};
+            border-top: {self.dimensions['border_width']}px solid {self.colors['border']};
         }}
         
         /* Group boxes */
         QGroupBox {{
-            border: 1px solid {self.colors['border']};
-            border-radius: 4px;
-            margin-top: 12px;
-            font-weight: bold;
-            padding-top: 10px;
+            border: {self.dimensions['border_width']}px solid {self.colors['border']};
+            border-radius: {self.dimensions['border_radius']}px;
+            margin-top: {self.layout['group_margin_top']}px;
+            font-weight: {self.fonts['weight_bold']};
+            padding-top: {self.spacing['xlarge']}px;
             color: {self.colors['text']};
         }}
         
         /* Filter group boxes with enhanced styling */
         QGroupBox[objectName="filter_group"] {{
-            border: 2px solid {self.colors['border']};
-            border-radius: 8px;
-            margin-top: 10px;
-            padding-top: 10px;
-            font-weight: bold;
+            border: {self.dimensions['border_width_thick']}px solid {self.colors['border']};
+            border-radius: {self.dimensions['border_radius_large']}px;
+            margin-top: {self.layout['filter_group_margin_top']}px;
+            padding-top: {self.spacing['xlarge']}px;
+            font-weight: {self.fonts['weight_bold']};
         }}
         
         QGroupBox::title {{
             subcontrol-origin: margin;
-            left: 10px;
-            padding: 0 5px;
+            left: {self.layout['title_left_offset']}px;
+            padding: {self.layout['title_padding']};
         }}
         
         /* Labels */
@@ -129,10 +306,11 @@ class Theme:
             background-color: {self.colors['medium_gray']};
             color: {self.colors['button_text']};
             border: none;
-            border-radius: 4px;
-            padding: 8px 16px;
-            font-weight: bold;
-            min-height: 30px;
+            border-radius: {self.dimensions['border_radius']}px;
+            padding: {self.layout['button_padding']};
+            font-weight: {self.fonts['weight_bold']};
+            min-height: {self.dimensions['button_min_height']}px;
+            min-width: {self.dimensions['button_min_width']}px;
         }}
         
         QPushButton:hover {{
@@ -148,11 +326,11 @@ class Theme:
             background-color: {self.colors['highlight']};
             color: {self.colors['text']};
             border: none;
-            border-radius: 4px;
-            padding: 10px 20px;
-            font-weight: bold;
-            min-height: 36px;
-            font-size: 13px;
+            border-radius: {self.dimensions['border_radius']}px;
+            padding: {self.layout['premium_button_padding']};
+            font-weight: {self.fonts['weight_bold']};
+            min-height: {self.dimensions['premium_button_min_height']}px;
+            font-size: {self.fonts['size_medium']}px;
         }}
         
         #premium_button:hover {{
@@ -163,13 +341,14 @@ class Theme:
         QTreeWidget {{
             background-color: {self.colors['dark_gray']};
             alternate-background-color: {self.colors['medium_gray']};
-            border: 1px solid {self.colors['border']};
-            border-radius: 4px;
+            border: {self.dimensions['border_width']}px solid {self.colors['border']};
+            border-radius: {self.dimensions['border_radius']}px;
             color: {self.colors['text']};
         }}
         
         QTreeWidget::item {{
-            padding: 4px;
+            padding: {self.spacing['small']}px;
+            min-height: {self.dimensions['list_item_height']}px;
         }}
         
         QTreeWidget::item:selected {{
@@ -180,66 +359,70 @@ class Theme:
         QHeaderView::section {{
             background-color: {self.colors['medium_gray']};
             color: {self.colors['text']};
-            padding: 6px;
+            padding: {self.layout['header_padding']};
             border: none;
-            border-right: 1px solid {self.colors['border']};
-            border-bottom: 1px solid {self.colors['border']};
+            border-right: {self.dimensions['border_width']}px solid {self.colors['border']};
+            border-bottom: {self.dimensions['border_width']}px solid {self.colors['border']};
+            min-height: {self.dimensions['tree_header_height']}px;
         }}
         
         /* Combo box */
         QComboBox {{
             background-color: {self.colors['medium_gray']};
-            border: 1px solid {self.colors['border']};
-            border-radius: 4px;
-            padding: 6px;
-            min-height: 30px;
+            border: {self.dimensions['border_width']}px solid {self.colors['border']};
+            border-radius: {self.dimensions['border_radius']}px;
+            padding: {self.layout['input_padding']};
+            min-height: {self.dimensions['combo_min_height']}px;
             color: {self.colors['text']};
         }}
         
         QComboBox::drop-down {{
             subcontrol-origin: padding;
             subcontrol-position: top right;
-            width: 20px;
-            border-left: 1px solid {self.colors['border']};
+            width: {self.spacing['massive']}px;
+            border-left: {self.dimensions['border_width']}px solid {self.colors['border']};
         }}
         
         QComboBox QAbstractItemView {{
             background-color: {self.colors['medium_gray']};
-            border: 1px solid {self.colors['border']};
+            border: {self.dimensions['border_width']}px solid {self.colors['border']};
             color: {self.colors['text']};
         }}
         
         /* Line edit */
         QLineEdit {{
             background-color: {self.colors['medium_gray']};
-            border: 1px solid {self.colors['border']};
-            border-radius: 4px;
-            padding: 6px;
+            border: {self.dimensions['border_width']}px solid {self.colors['border']};
+            border-radius: {self.dimensions['border_radius']}px;
+            padding: {self.layout['input_padding']};
+            min-height: {self.dimensions['input_min_height']}px;
             color: {self.colors['text']};
         }}
         
         QLineEdit:focus {{
-            border: 2px solid {self.colors['highlight']};
+            border: {self.dimensions['border_width_thick']}px solid {self.colors['highlight']};
         }}
         
         /* Text edit */
         QTextEdit {{
             background-color: {self.colors['dark_gray']};
-            border: 1px solid {self.colors['border']};
-            border-radius: 4px;
+            border: {self.dimensions['border_width']}px solid {self.colors['border']};
+            border-radius: {self.dimensions['border_radius']}px;
             color: {self.colors['text']};
+            padding: {self.layout['input_padding']};
         }}
         
         /* List widgets */
         QListWidget {{
             background-color: {self.colors['dark_gray']};
-            border: 1px solid {self.colors['border']};
-            border-radius: 4px;
+            border: {self.dimensions['border_width']}px solid {self.colors['border']};
+            border-radius: {self.dimensions['border_radius']}px;
             color: {self.colors['text']};
         }}
         
         QListWidget::item {{
-            padding: 4px;
+            padding: {self.spacing['small']}px;
+            min-height: {self.dimensions['list_item_height']}px;
         }}
         
         QListWidget::item:selected {{
@@ -247,38 +430,52 @@ class Theme:
             color: {self.colors['text']};
         }}
         
+        /* Override for drag-drop lists to prevent blue highlighting */
+        QListWidget[objectName="drag_drop_list"]::item:selected {{
+              background-color: transparent; 
+        }}
+        
+        QListWidget[objectName="drag_drop_list"]::item:selected:active {{
+             background-color: transparent; 
+        }}
+        
+        QListWidget[objectName="drag_drop_list"]::item:selected:focus {{
+             background-color: transparent; 
+        }}
+        
         /* Progress bar */
         QProgressBar {{
             background-color: {self.colors['medium_gray']};
-            border: 1px solid {self.colors['border']};
-            border-radius: 4px;
+            border: {self.dimensions['border_width']}px solid {self.colors['border']};
+            border-radius: {self.dimensions['border_radius']}px;
             text-align: center;
             color: {self.colors['text']};
+            min-height: {self.dimensions['input_min_height']}px;
         }}
         
         QProgressBar::chunk {{
             background-color: {self.colors['highlight']};
-            border-radius: 3px;
+            border-radius: {self.dimensions['border_radius_small']}px;
         }}
         
         /* Tab widget */
         QTabWidget::pane {{
-            border: 1px solid {self.colors['border']};
+            border: {self.dimensions['border_width']}px solid {self.colors['border']};
             background-color: {self.colors['background']};
         }}
         
         QTabBar::tab {{
             background-color: {self.colors['medium_gray']};
             color: {self.colors['text']};
-            padding: 8px 16px;
-            margin-right: 2px;
-            border-top-left-radius: 4px;
-            border-top-right-radius: 4px;
+            padding: {self.layout['tab_padding']};
+            margin-right: {self.spacing['tiny']}px;
+            border-top-left-radius: {self.dimensions['border_radius']}px;
+            border-top-right-radius: {self.dimensions['border_radius']}px;
         }}
         
         QTabBar::tab:selected {{
             background-color: {self.colors['background']};
-            border-bottom: 2px solid {self.colors['highlight']};
+            border-bottom: {self.dimensions['border_width_thick']}px solid {self.colors['highlight']};
         }}
         
         QTabBar::tab:hover {{
@@ -288,14 +485,14 @@ class Theme:
         /* Scroll bars */
         QScrollBar:vertical {{
             background-color: {self.colors['medium_gray']};
-            width: 12px;
-            border-radius: 6px;
+            width: {self.dimensions['scrollbar_width']}px;
+            border-radius: {self.dimensions['scrollbar_width']//2}px;
         }}
         
         QScrollBar::handle:vertical {{
             background-color: {self.colors['light_gray']};
-            border-radius: 6px;
-            min-height: 20px;
+            border-radius: {self.dimensions['scrollbar_width']//2}px;
+            min-height: {self.dimensions['scrollbar_handle_min']}px;
         }}
         
         QScrollBar::handle:vertical:hover {{
@@ -304,14 +501,14 @@ class Theme:
         
         QScrollBar:horizontal {{
             background-color: {self.colors['medium_gray']};
-            height: 12px;
-            border-radius: 6px;
+            height: {self.dimensions['scrollbar_width']}px;
+            border-radius: {self.dimensions['scrollbar_width']//2}px;
         }}
         
         QScrollBar::handle:horizontal {{
             background-color: {self.colors['light_gray']};
-            border-radius: 6px;
-            min-width: 20px;
+            border-radius: {self.dimensions['scrollbar_width']//2}px;
+            min-width: {self.dimensions['scrollbar_handle_min']}px;
         }}
         
         QScrollBar::handle:horizontal:hover {{
@@ -321,22 +518,24 @@ class Theme:
         /* Spin box */
         QSpinBox {{
             background-color: {self.colors['medium_gray']};
-            border: 1px solid {self.colors['border']};
-            border-radius: 4px;
-            padding: 6px;
+            border: {self.dimensions['border_width']}px solid {self.colors['border']};
+            border-radius: {self.dimensions['border_radius']}px;
+            padding: {self.layout['input_padding']};
+            min-height: {self.dimensions['input_min_height']}px;
             color: {self.colors['text']};
         }}
         
         /* Check box */
         QCheckBox {{
             color: {self.colors['text']};
+            spacing: {self.spacing['small']}px;
         }}
         
         QCheckBox::indicator {{
-            width: 16px;
-            height: 16px;
-            border: 1px solid {self.colors['border']};
-            border-radius: 3px;
+            width: {self.dimensions['checkbox_size']}px;
+            height: {self.dimensions['checkbox_size']}px;
+            border: {self.dimensions['border_width']}px solid {self.colors['border']};
+            border-radius: {self.dimensions['border_radius_small']}px;
             background-color: {self.colors['medium_gray']};
         }}
         
@@ -347,13 +546,14 @@ class Theme:
         /* Radio button */
         QRadioButton {{
             color: {self.colors['text']};
+            spacing: {self.spacing['small']}px;
         }}
         
         QRadioButton::indicator {{
-            width: 16px;
-            height: 16px;
-            border: 1px solid {self.colors['border']};
-            border-radius: 8px;
+            width: {self.dimensions['radio_size']}px;
+            height: {self.dimensions['radio_size']}px;
+            border: {self.dimensions['border_width']}px solid {self.colors['border']};
+            border-radius: {self.dimensions['radio_size']//2}px;
             background-color: {self.colors['medium_gray']};
         }}
         
@@ -370,11 +570,12 @@ class Theme:
                     background-color: {self.colors['highlight']};
                     color: {self.colors['text']};
                     border: none;
-                    border-radius: 6px;
-                    padding: 8px 16px;
-                    font-size: 12px;
-                    font-weight: bold;
-                    min-height: 16px;
+                    border-radius: {self.dimensions['border_radius_large']}px;
+                    padding: {self.layout['button_padding']};
+                    font-size: {self.fonts['size_normal']}px;
+                    font-weight: {self.fonts['weight_bold']};
+                    min-height: {self.dimensions['button_min_height']}px;
+                    min-width: {self.dimensions['button_min_width']}px;
                 }}
                 QPushButton:hover {{
                     background-color: {self.colors['highlight_hover']};
@@ -389,17 +590,70 @@ class Theme:
                     background-color: {self.colors['error']};
                     color: {self.colors['text']};
                     border: none;
-                    border-radius: 6px;
-                    padding: 8px 16px;
-                    font-size: 12px;
-                    font-weight: bold;
-                    min-height: 16px;
+                    border-radius: {self.dimensions['border_radius_large']}px;
+                    padding: {self.layout['button_padding']};
+                    font-size: {self.fonts['size_normal']}px;
+                    font-weight: {self.fonts['weight_bold']};
+                    min-height: {self.dimensions['button_min_height']}px;
+                    min-width: {self.dimensions['button_min_width']}px;
                 }}
                 QPushButton:hover {{
-                    background-color: #d32f2f;
+                    background-color: {self.colors['error_hover']};
                 }}
                 QPushButton:pressed {{
-                    background-color: #b71c1c;
+                    background-color: {self.colors['error_pressed']};
+                }}
+            """
+        elif style_type == "QMainButton":
+            return f"""
+                QPushButton {{
+                    background-color: #252525;
+                    color: #d6d6d6;
+                    border: 1px solid #3b3b3b;
+                    border-radius: 8px;
+                    padding: 5px 15px;
+                    font-family: 'Segoe UI', Arial, sans-serif;
+                    font-weight: normal;
+                    font-size: {self.fonts['size_normal']}px;
+                }}
+            """
+        elif style_type == "ScanButton":
+            base_style = self.get_button_style("QMainButton")
+            return base_style.replace("background-color: #252525;", "background-color: #383838;")
+        elif style_type == "ClearButton":
+            base_style = self.get_button_style("QMainButton")
+            return base_style.replace("background-color: #252525;", "background-color: #6b211e;").replace("border: 1px solid #3b3b3b;", "border: 1px solid #6b211e;")
+        elif style_type == "SelectAllButton":
+            base_style = self.get_button_style("QMainButton")
+            return base_style.replace("border: 1px solid #3b3b3b;", "border: none;\n                    border-right: 1px solid #1a1a1a;\n                    border-bottom: 1px solid #1a1a1a;").replace("padding: 5px 15px;", "padding: 1px 3px !important;\n                    line-height: 1.0;\n                    min-height: 20px;")
+        elif style_type == "ClearAllButton":
+            base_style = self.get_button_style("QMainButton")
+            return base_style.replace("background-color: #252525;", "background-color: #6b211e;").replace("border: 1px solid #3b3b3b;", "border: none;\n                    border-right: 1px solid #4a1815;\n                    border-bottom: 1px solid #4a1815;").replace("padding: 5px 15px;", "padding: 2px 8px !important;\n                    line-height: 1.0;\n                    min-height: 20px;")
+        elif style_type == "CircularMoveButton":
+            return f"""
+                QPushButton {{
+                    background-color: #6b211e;
+                    color: #d6d6d6;
+                    border: none;
+                    border-radius: 10px;
+                    width: 20px;
+                    height: 20px;
+                    max-width: 20px;
+                    max-height: 20px;
+                    min-width: 20px;
+                    min-height: 20px;
+                    font-family: 'Segoe UI', Arial, sans-serif;
+                    font-weight: bold;
+                    font-size: 10px;
+                    text-align: center;
+                    padding: 0px;
+                    margin: 0px;
+                }}
+                QPushButton:hover {{
+                    background-color: #7d2621;
+                }}
+                QPushButton:pressed {{
+                    background-color: #5a1c19;
                 }}
             """
         else:
@@ -408,10 +662,11 @@ class Theme:
                     background-color: {self.colors['medium_gray']};
                     color: {self.colors['button_text']};
                     border: none;
-                    border-radius: 4px;
-                    padding: 8px 16px;
-                    font-weight: bold;
-                    min-height: 30px;
+                    border-radius: {self.dimensions['border_radius']}px;
+                    padding: {self.layout['button_padding']};
+                    font-weight: {self.fonts['weight_bold']};
+                    min-height: {self.dimensions['button_min_height']}px;
+                    min-width: {self.dimensions['button_min_width']}px;
                 }}
                 QPushButton:hover {{
                     background-color: {self.colors['light_gray']};
@@ -424,3 +679,635 @@ class Theme:
     def get_colors(self):
         """Get the color palette."""
         return self.colors.copy()
+    
+    def get_dimensions(self):
+        """Get the dimensions dictionary."""
+        return self.dimensions.copy()
+    
+    def get_spacing(self):
+        """Get the spacing dictionary."""
+        return self.spacing.copy()
+    
+    def get_layout(self):
+        """Get the layout dictionary."""
+        return self.layout.copy()
+    
+    def get_fonts(self):
+        """Get the fonts dictionary."""
+        return self.fonts.copy()
+    
+    def get_dimension(self, key, default=None):
+        """Get a specific dimension value."""
+        return self.dimensions.get(key, default)
+    
+    def get_spacing_value(self, key, default=None):
+        """Get a specific spacing value."""
+        return self.spacing.get(key, default)
+    
+    def get_layout_value(self, key, default=None):
+        """Get a specific layout value."""
+        return self.layout.get(key, default)
+    
+    def get_font_property(self, key, default=None):
+        """Get a specific font property."""
+        return self.fonts.get(key, default)
+    
+    def get_color(self, key, default=None):
+        """Get a specific color value."""
+        return self.colors.get(key, default)
+    
+    def create_widget_style(self, widget_type, **overrides):
+        """Create a custom widget style with theme properties and optional overrides."""
+        base_styles = {
+            'button': {
+                'background-color': self.colors['medium_gray'],
+                'color': self.colors['button_text'],
+                'border': 'none',
+                'border-radius': f"{self.dimensions['border_radius']}px",
+                'padding': self.layout['button_padding'],
+                'font-weight': self.fonts['weight_bold'],
+                'min-height': f"{self.dimensions['button_min_height']}px",
+                'min-width': f"{self.dimensions['button_min_width']}px"
+            },
+            'input': {
+                'background-color': self.colors['medium_gray'],
+                'border': f"{self.dimensions['border_width']}px solid {self.colors['border']}",
+                'border-radius': f"{self.dimensions['border_radius']}px",
+                'padding': self.layout['input_padding'],
+                'min-height': f"{self.dimensions['input_min_height']}px",
+                'color': self.colors['text']
+            },
+            'list': {
+                'background-color': self.colors['dark_gray'],
+                'border': f"{self.dimensions['border_width']}px solid {self.colors['border']}",
+                'border-radius': f"{self.dimensions['border_radius']}px",
+                'color': self.colors['text']
+            }
+        }
+        
+        if widget_type not in base_styles:
+            return ""
+        
+        style_dict = base_styles[widget_type].copy()
+        style_dict.update(overrides)
+        
+        style_parts = [f"{prop}: {value};" for prop, value in style_dict.items()]
+        return " ".join(style_parts)
+    
+    def get_settings_modern_button_style(self):
+        """Get modern button style for settings dialog."""
+        return f"""
+            QPushButton {{
+                background-color: {self.colors['highlight']};
+                color: {self.colors['button_text']};
+                border: none;
+                border-radius: {self.dimensions['border_radius']}px;
+                padding: {self.layout['settings_modern_button_padding']};
+                font-size: 12px;
+                font-weight: {self.fonts['weight_bold']};
+                min-height: {self.dimensions['button_min_height']}px;
+            }}
+            QPushButton:hover {{
+                background-color: {self.colors['highlight_hover']};
+            }}
+            QPushButton:pressed {{
+                background-color: {self.colors['highlight_pressed']};
+            }}
+        """
+    
+    def get_settings_secondary_button_style(self):
+        """Get secondary button style for settings dialog."""
+        return f"""
+            QPushButton {{
+                background-color: {self.colors['medium_gray']};
+                color: {self.colors['button_text']};
+                border: none;
+                border-radius: {self.dimensions['border_radius']}px;
+                padding: {self.layout['settings_secondary_button_padding']};
+                font-size: 12px;
+                font-weight: {self.fonts['weight_bold']};
+                min-height: {self.dimensions['button_min_height']}px;
+            }}
+            QPushButton:hover {{
+                background-color: {self.colors['light_gray']};
+            }}
+            QPushButton:pressed {{
+                background-color: {self.colors['highlight']};
+            }}
+        """
+    
+    def get_settings_help_text_style(self):
+        """Get help text style for settings dialog."""
+        return f"""
+            QLabel {{
+                color: {self.colors['muted_text']};
+                font-size: {self.layout['help_text_font_size']};
+            }}
+        """
+    
+    def get_settings_danger_group_style(self):
+        """Get danger zone group box style for settings dialog."""
+        return f"""
+            QGroupBox {{
+                font-weight: {self.fonts['weight_bold']};
+                font-size: 14px;
+                color: {self.colors['error']};
+                border: 2px solid {self.colors['error']};
+                border-radius: {self.dimensions['border_radius_large']}px;
+                margin-top: 10px;
+                padding-top: 10px;
+                subcontrol-origin: margin;
+                left: {self.layout['title_left_offset']}px;
+                padding: {self.layout['settings_contents_margins']};
+            }}
+            QGroupBox::title {{
+                subcontrol-origin: margin;
+                left: {self.layout['title_left_offset']}px;
+                padding: {self.layout['title_padding']};
+            }}
+        """
+    
+    def get_settings_danger_button_style(self):
+        """Get danger button style for settings dialog."""
+        return f"""
+            QPushButton {{
+                background-color: {self.colors['error']};
+                color: {self.colors['button_text']};
+                border: none;
+                border-radius: {self.dimensions['border_radius']}px;
+                padding: {self.layout['settings_danger_button_padding']};
+                font-size: 12px;
+                font-weight: {self.fonts['weight_bold']};
+                min-height: {self.dimensions['button_min_height']}px;
+            }}
+            QPushButton:hover {{
+                background-color: {self.colors['error_hover']};
+            }}
+            QPushButton:pressed {{
+                background-color: {self.colors['error_pressed']};
+            }}
+        """
+    
+    def get_settings_warning_button_style(self):
+        """Get warning button style for settings dialog."""
+        return f"""
+            QPushButton {{
+                background-color: {self.colors['warning']};
+                color: {self.colors['button_text']};
+                border: none;
+                border-radius: {self.dimensions['border_radius']}px;
+                padding: {self.layout['settings_warning_button_padding']};
+                font-size: 12px;
+                font-weight: {self.fonts['weight_bold']};
+                min-height: {self.dimensions['button_min_height']}px;
+            }}
+            QPushButton:hover {{
+                background-color: {self.colors['warning_hover']};
+            }}
+            QPushButton:pressed {{
+                background-color: {self.colors['warning_pressed']};
+            }}
+        """
+    
+    def get_settings_group_box_style(self):
+        """Get standard group box style for settings dialog."""
+        return f"""
+            QGroupBox {{
+                font-weight: {self.fonts['weight_bold']};
+                font-size: 14px;
+                border: 2px solid {self.colors['border']};
+                border-radius: {self.dimensions['border_radius_large']}px;
+                margin-top: 10px;
+                padding-top: 10px;
+                subcontrol-origin: margin;
+                left: {self.layout['title_left_offset']}px;
+                padding: {self.layout['settings_contents_margins']};
+            }}
+            QGroupBox::title {{
+                subcontrol-origin: margin;
+                left: {self.layout['title_left_offset']}px;
+                padding: {self.layout['title_padding']};
+            }}
+        """
+    
+    def get_settings_combo_box_style(self):
+        """Get combo box style for settings dialog."""
+        return f"""
+            QComboBox {{
+                border: {self.dimensions['border_width']}px solid {self.colors['border']};
+                border-radius: {self.dimensions['border_radius']}px;
+                padding: {self.layout['input_padding']};
+                font-size: 12px;
+                min-width: 150px;
+            }}
+            QComboBox:focus {{
+                border-color: {self.colors['primary']};
+            }}
+        """
+    
+    def get_system_combo_box_style(self):
+        """Get combo box style for system selection."""
+        return f"""
+            QComboBox {{
+                background-color: #3e3e3e;
+                border: 1px solid #474747;
+                border-radius: {self.dimensions['border']['radius']}px;
+                padding: {self.layout['input_padding']};
+                color: #d6d6d6;
+                min-height: {self.dimensions['widget']['combo_min_height']}px;
+            }}
+            
+            QComboBox::drop-down {{
+                subcontrol-origin: padding;
+                subcontrol-position: top right;
+                width: 20px;
+                border: none;
+                background-color: #3e3e3e;
+            }}
+            
+            QComboBox::down-arrow {{
+                image: url(n:/Romplestiltskin/Romplestiltskin/src/ui/flags/down_arrow.svg);
+                width: 10px;
+                height: 10px;
+                border: none; /* Remove any border that might interfere */
+                background: transparent; /* Ensure background is transparent */
+                subcontrol-position: center;
+            }}
+            
+            QComboBox QAbstractItemView {{
+                background-color: #3e3e3e;
+                border: 1px solid #474747;
+                color: #d6d6d6;
+                selection-background-color: #474747;
+            }}
+        """
+    
+    # Drag and Drop Styling Methods
+    
+    def get_drag_drop_highlight_style(self):
+        """Get drag and drop highlight style for DragDropListWidget."""
+        # This style is applied directly to the DragDropListWidget instance.
+        return """
+            border: none !important;
+            outline: none !important;
+            background-color: rgba(0, 120, 255, 0.05) !important; /* Subtle highlight or transparent */
+        """
+    
+    def get_drag_drop_normal_style(self):
+        """Get normal style for DragDropListWidget."""
+        # This style is applied directly to the DragDropListWidget instance.
+        return f"""
+            border: {self.dimensions['border_width']}px solid {self.colors['border']};
+            background-color: {self.colors['medium_gray']};
+            outline: none !important;
+        """
+    
+    def get_drag_drop_available_list_style(self):
+        """Get available regions list style."""
+        return f"""
+            QListWidget {{
+                border: none;
+                outline: none;
+                background-color: {self.colors['drag_drop']['available_bg']};
+                color: {self.colors['drag_drop']['available_text']};
+                font-family: {self.fonts['family']};
+                font-size: {self.fonts['size_medium']}px;
+                font-weight: normal;
+            }}
+            QListWidget::item {{
+                padding: {self.spacing['small']}px;
+                border: none;
+                outline: none;
+                font-family: {self.fonts['family']};
+                font-size: {self.fonts['size_medium']}px;
+                font-weight: normal;
+            }}
+            QListWidget::item:selected {{
+                background-color: {self.colors['drag_drop']['available_bg']}; /* Keep same as item background */
+                color: {self.colors['drag_drop']['available_text']};
+                border: none;
+                outline: none;
+                font-family: {self.fonts['family']};
+                font-size: {self.fonts['size_medium']}px;
+                font-weight: normal;
+            }}
+            QListWidget::item:selected:active {{
+                background-color: {self.colors['drag_drop']['available_bg']};
+                color: {self.colors['drag_drop']['available_text']};
+                border: none;
+                outline: none;
+            }}
+            QListWidget::item:selected:focus {{
+                background-color: {self.colors['drag_drop']['available_bg']};
+                color: {self.colors['drag_drop']['available_text']};
+                border: none;
+                outline: none;
+            }}
+            QListWidget::item:hover {{
+                background-color: {self.colors['drag_drop']['available_hover_bg']};
+                color: {self.colors['drag_drop']['available_hover_text']};
+                border: none;
+                outline: none;
+            }}
+        """
+    
+    def get_drag_drop_ignored_list_style(self):
+        """Get ignored regions list style."""
+        return f"""
+            QListWidget {{
+                border: none;
+                outline: none;
+                background-color: {self.colors['drag_drop']['ignored_bg']};
+                color: {self.colors['drag_drop']['ignored_text']};
+                font-family: {self.fonts['family']};
+                font-size: {self.fonts['size_medium']}px;
+                font-weight: normal;
+            }}
+            QListWidget::item {{
+                padding: {self.spacing['small']}px;
+                border: none;
+                outline: none;
+            }}
+            QListWidget::item:selected {{
+                background-color: {self.colors['drag_drop']['ignored_bg']}; /* Keep same as item background */
+                color: {self.colors['drag_drop']['ignored_text']};
+                border: none;
+                outline: none;
+            }}
+            QListWidget::item:selected:active {{
+                background-color: {self.colors['drag_drop']['ignored_bg']};
+                color: {self.colors['drag_drop']['ignored_text']};
+                border: none;
+                outline: none;
+            }}
+            QListWidget::item:selected:focus {{
+                background-color: {self.colors['drag_drop']['ignored_bg']};
+                color: {self.colors['drag_drop']['ignored_text']};
+                border: none;
+                outline: none;
+            }}
+            QListWidget::item:hover {{
+                background-color: {self.colors['drag_drop']['ignored_hover_bg']};
+                color: {self.colors['drag_drop']['ignored_hover_text']};
+                border: none;
+                outline: none;
+            }}
+        """
+    
+    def get_drag_drop_title_style(self):
+        """Get title label style for drag and drop widgets."""
+        return f"""
+            QLabel {{
+                font-weight: {self.fonts['weight_bold']};
+                font-size: {self.fonts['size_medium']}px;
+                margin-bottom: {self.spacing['medium']}px;
+                border: none !important;
+                outline: none !important;
+                background-color: transparent !important;
+                selection-background-color: transparent !important;
+                selection-color: inherit !important;
+            }}
+            QLabel:focus {{
+                border: none !important;
+                outline: none !important;
+                background-color: transparent !important;
+            }}
+        """
+    
+    def get_drag_drop_label_style(self):
+        """Get label style for drag and drop widgets."""
+        return f"""
+            QLabel {{
+                font-weight: {self.fonts['weight_bold']};
+            }}
+        """
+    
+    def get_drag_drop_button_style(self):
+        """Get button style for drag and drop widgets."""
+        return f"""
+            QPushButton {{
+                color: {self.colors['text']};
+                font-weight: {self.fonts['weight_bold']};
+                font-size: {self.fonts['size_normal']}px;
+                background-color: transparent;
+                border: none;
+                padding: {self.spacing['medium']}px;
+            }}
+            QPushButton:hover {{
+                background-color: {self.colors['light_gray']};
+                border-radius: {self.dimensions['border_radius_small']}px;
+            }}
+        """
+    
+    def get_progress_dialog_details_style(self):
+        """Get details label style for progress dialog."""
+        return f"""
+            QLabel {{
+                color: {self.colors['progress_dialog']['details_text']};
+                font-size: {self.colors['progress_dialog']['details_font_size']};
+            }}
+        """
+    
+    def get_progress_dialog_log_max_height(self):
+        """Get maximum height for progress dialog log text."""
+        return self.dimensions['progress_log_max_height']
+    
+    def get_language_button_style(self):
+        """Get style for language selection buttons."""
+        return f"""
+            QPushButton {{
+                background-color: {self.colors['highlight']};
+                color: {self.colors['button_text']};
+                border: none;
+                padding: {self.spacing['small']}px {self.spacing['medium']}px;
+                border-radius: {self.dimensions['border_radius_small']}px;
+                font-size: {self.fonts['size_small']}px;
+            }}
+            QPushButton:hover {{
+                background-color: {self.colors['highlight_hover']};
+            }}
+        """
+    
+    def get_clear_language_button_style(self):
+        """Get style for clear language selection buttons."""
+        return f"""
+            QPushButton {{
+                background-color: {self.colors['error']};
+                color: {self.colors['button_text']};
+                border: none;
+                padding: {self.spacing['small']}px {self.spacing['medium']}px;
+                border-radius: {self.dimensions['border_radius_small']}px;
+                font-size: {self.fonts['size_small']}px;
+            }}
+            QPushButton:hover {{
+                background-color: {self.colors['error_hover']};
+            }}
+        """
+    
+    def get_type_button_style(self):
+        """Get style for game type selection buttons."""
+        return f"""
+            QPushButton {{
+                background-color: {self.colors['highlight']};
+                color: {self.colors['button_text']};
+                border: none;
+                padding: {self.spacing['medium']}px {self.spacing['large']}px;
+                border-radius: {self.dimensions['border_radius_small']}px;
+                font-weight: {self.fonts['weight_bold']};
+            }}
+            QPushButton:hover {{
+                background-color: {self.colors['highlight_hover']};
+            }}
+        """
+    
+    def get_clear_type_button_style(self):
+        """Get style for clear game type selection buttons."""
+        return f"""
+            QPushButton {{
+                background-color: {self.colors['error']};
+                color: {self.colors['button_text']};
+                border: none;
+                padding: {self.spacing['medium']}px {self.spacing['large']}px;
+                border-radius: {self.dimensions['border_radius_small']}px;
+                font-weight: {self.fonts['weight_bold']};
+            }}
+            QPushButton:hover {{
+                background-color: {self.colors['error_hover']};
+            }}
+        """
+    
+    def get_actions_group_style(self):
+        """Get style for actions group box."""
+        return f"""
+            QGroupBox {{
+                font-weight: {self.fonts['weight_bold']};
+                border: 2px solid {self.colors['border']};
+                border-radius: {self.dimensions['border_radius_medium']}px;
+                margin-top: {self.spacing['medium']}px;
+                padding-top: {self.spacing['medium']}px;
+            }}
+            QGroupBox::title {{
+                subcontrol-origin: margin;
+                left: {self.spacing['medium']}px;
+                padding: 0 {self.spacing['small']}px 0 {self.spacing['small']}px;
+            }}
+        """
+    
+    def get_main_window_minimum_size(self):
+        """Get minimum size for main window."""
+        return (self.dimensions.get('main_window_min_width', 1400), 
+                self.dimensions.get('main_window_min_height', 900))
+    
+    def get_progress_dialog_size(self):
+        """Get default size for progress dialog."""
+        return (self.dimensions.get('progress_dialog_width', 400), 
+                self.dimensions.get('progress_dialog_height', 200))
+    
+    def get_progress_dialog_expanded_size(self):
+        """Get expanded size for progress dialog with log."""
+        return (self.dimensions.get('progress_dialog_width', 400), 
+                self.dimensions.get('progress_dialog_expanded_height', 300))
+    
+    def get_settings_dialog_size(self):
+        """Get default size for settings dialog."""
+        return (self.dimensions.get('settings_dialog_width', 600), 
+                self.dimensions.get('settings_dialog_height', 500))
+    
+    def get_menu_columns_widget_style(self):
+        """Get style for menu columns widget with bottom padding."""
+        return f"""
+            QWidget#menu_columns_widget {{
+                padding-bottom: 15px;
+            }}
+        """
+    
+    # Helper methods for theme system enhancement
+    def get_dimension(self, category, key):
+        """Get dimension value by category and key.
+        
+        Args:
+            category (str): The dimension category (e.g., 'widget', 'border', 'main_window')
+            key (str): The specific dimension key within the category
+            
+        Returns:
+            The dimension value, or None if not found
+        """
+        if category in self.dimensions and isinstance(self.dimensions[category], dict):
+            return self.dimensions[category].get(key)
+        return None
+    
+    def get_widget_style(self, widget_type, variant='default'):
+        """Return complete stylesheet for widget types.
+        
+        Args:
+            widget_type (str): The type of widget (e.g., 'button', 'input', 'combo')
+            variant (str): The style variant (default: 'default')
+            
+        Returns:
+            str: Complete CSS stylesheet for the widget
+        """
+        if widget_type == 'button':
+            if variant == 'premium':
+                return self.get_premium_button_style()
+            elif variant == 'drag_drop':
+                return self.get_drag_drop_button_style()
+            else:
+                return self.get_button_style()
+        elif widget_type == 'input':
+            return self.get_input_style()
+        elif widget_type == 'combo':
+            return self.get_combo_style()
+        elif widget_type == 'tree':
+            return self.get_tree_style()
+        elif widget_type == 'list':
+            if variant == 'drag_drop':
+                return self.get_drag_drop_list_style()
+            else:
+                return self.get_list_style()
+        elif widget_type == 'label':
+            if variant == 'drag_drop':
+                return self.get_drag_drop_label_style()
+            elif variant == 'progress_dialog_details':
+                return self.get_progress_dialog_details_style()
+            else:
+                return self.get_label_style()
+        elif widget_type == 'scrollbar':
+            return self.get_scrollbar_style()
+        elif widget_type == 'progress':
+            return self.get_progress_bar_style()
+        else:
+            return ""
+    
+    def apply_dimensions(self, widget, dimension_key):
+        """Helper to apply dimensions to widgets.
+        
+        Args:
+            widget: The Qt widget to apply dimensions to
+            dimension_key (str): The dimension key to apply
+        """
+        from PyQt5.QtWidgets import QWidget
+        
+        if not isinstance(widget, QWidget):
+            return
+            
+        # Handle legacy flat dimension keys
+        if dimension_key in self.dimensions and not isinstance(self.dimensions[dimension_key], dict):
+            value = self.dimensions[dimension_key]
+            
+            # Apply based on dimension key naming convention
+            if 'min_height' in dimension_key:
+                widget.setMinimumHeight(value)
+            elif 'min_width' in dimension_key:
+                widget.setMinimumWidth(value)
+            elif 'maximum_height' in dimension_key or 'max_height' in dimension_key:
+                widget.setMaximumHeight(value)
+            elif 'maximum_width' in dimension_key or 'max_width' in dimension_key:
+                widget.setMaximumWidth(value)
+            elif 'minimum_width' in dimension_key:
+                widget.setMinimumWidth(value)
+            elif 'minimum_height' in dimension_key:
+                widget.setMinimumHeight(value)
+            elif 'width' in dimension_key:
+                widget.setFixedWidth(value)
+            elif 'height' in dimension_key:
+                widget.setFixedHeight(value)

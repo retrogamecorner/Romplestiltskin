@@ -19,6 +19,7 @@ from PyQt6.QtWidgets import (
 )
 from PyQt6.QtCore import Qt, QThread, pyqtSignal, QTimer, QByteArray
 from PyQt6.QtGui import QAction, QIcon, QColor, QFont
+import qtawesome as qta
 
 class NumericTreeWidgetItem(QTreeWidgetItem):
     """Custom QTreeWidgetItem that sorts numerically using UserRole data for the first column."""
@@ -151,14 +152,20 @@ class MainWindow(QMainWindow):
     def setup_ui(self):
         """Set up the user interface."""
         self.setWindowTitle("Romplestiltskin - ROM Collection Manager")
-        self.setMinimumSize(1400, 900)  # Increased size to accommodate larger region filter
+        min_width, min_height = self.theme.get_main_window_minimum_size()
+        self.setMinimumSize(min_width, min_height)  # Set minimum size from theme
         
         # Central widget
         central_widget = QWidget()
         self.setCentralWidget(central_widget)
         
-        # Main layout
+        # Apply margins to the main window to create visible padding
+        margins = self.theme.layout['main_window_margins']
+        self.setContentsMargins(margins, margins, margins, margins)
+        
+        # Main layout with internal padding
         main_layout = QVBoxLayout(central_widget)
+        main_layout.setContentsMargins(margins, margins, margins, margins)
         
         # Top controls
         controls_layout = QHBoxLayout()
@@ -166,29 +173,17 @@ class MainWindow(QMainWindow):
         # System selection
         controls_layout.addWidget(QLabel("System:"))
         self.system_combo = QComboBox()
-        self.system_combo.setMinimumWidth(300)  # Set minimum width for longer system names
+        self.system_combo.setMinimumWidth(self.theme.dimensions['main_window']['combo_minimum_width'])  # Set minimum width for longer system names
         self.system_combo.setSizeAdjustPolicy(QComboBox.SizeAdjustPolicy.AdjustToContents)
+        self.system_combo.setStyleSheet(self.theme.get_system_combo_box_style())
         self.system_combo.currentTextChanged.connect(self.on_system_changed)
         controls_layout.addWidget(self.system_combo)
         
         controls_layout.addStretch()
         
-        # Action buttons with premium styling
-        self.scan_button = QPushButton("📂 Scan ROM Folder")
-        self.scan_button.setObjectName("premium_button")
-        self.scan_button.clicked.connect(lambda: self.scan_rom_folder(prompt_for_folder=True))
-        controls_layout.addWidget(self.scan_button)
+        # Action buttons moved to menu columns widget
         
-        self.import_dat_button = QPushButton("📥 Import DAT Files")
-        self.import_dat_button.setObjectName("premium_button")
-        self.import_dat_button.clicked.connect(self.import_dat_files)
-        controls_layout.addWidget(self.import_dat_button)
-        
-        self.clear_rom_data_button = QPushButton("🗑️ Clear ROM Data")
-        self.clear_rom_data_button.setObjectName("premium_button")
-        self.clear_rom_data_button.clicked.connect(self.clear_rom_data)
-        controls_layout.addWidget(self.clear_rom_data_button)
-        
+
         main_layout.addLayout(controls_layout)
         
         # Main content area
@@ -214,7 +209,6 @@ class MainWindow(QMainWindow):
         main_layout.addWidget(bottom_panel)
         
         # Apply styling using theme colors
-        self.setStyleSheet(f"QMainWindow {{ background-color: {self.theme.colors['background']}; padding: 1%; }}")
         bottom_panel.setStyleSheet("QWidget { background-color: transparent; }")
     
     def create_dat_panel(self) -> QWidget:
@@ -229,17 +223,17 @@ class MainWindow(QMainWindow):
         ])
         self.dat_tree.setAlternatingRowColors(True)
         self.dat_tree.setSortingEnabled(True)
-        self.dat_tree.setMinimumHeight(300)  # Reduced height
-        self.dat_tree.setMaximumHeight(350)  # Prevent excessive growth
+        self.dat_tree.setMinimumHeight(self.theme.dimensions['dat_tree_minimum_height'])  # Reduced height
+        self.dat_tree.setMaximumHeight(self.theme.dimensions['dat_tree_maximum_height'])  # Prevent excessive growth
         # Make game name column wider (now at index 1)
-        self.dat_tree.setColumnWidth(1, 300)
+        self.dat_tree.setColumnWidth(1, self.theme.layout['tree_name_column_width'])
         # Make # column narrower
-        self.dat_tree.setColumnWidth(0, 50)
+        self.dat_tree.setColumnWidth(0, self.theme.layout['tree_index_column_width'])
         layout.addWidget(self.dat_tree)
         
         # Stats with detailed feedback
         self.dat_stats_label = QLabel("Total: 0 | Filtered Out: 0 | Showing: 0")
-        self.dat_stats_label.setStyleSheet("font-weight: bold; padding: 5px;")
+        self.dat_stats_label.setStyleSheet(f"font-weight: {self.theme.fonts['weight_bold']}; padding: {self.theme.layout['stats_label_padding']};")
         layout.addWidget(self.dat_stats_label)
         
         return panel
@@ -263,10 +257,10 @@ class MainWindow(QMainWindow):
         ])
         self.correct_tree.setAlternatingRowColors(True)
         self.correct_tree.setSortingEnabled(True)
-        self.correct_tree.setMinimumHeight(250)  # Reduced height
-        self.correct_tree.setMaximumHeight(300)  # Prevent excessive growth
-        self.correct_tree.setColumnWidth(0, 50)  # # column
-        self.correct_tree.setColumnWidth(1, 300)  # Game name column
+        self.correct_tree.setMinimumHeight(self.theme.dimensions['tree_minimum_height'])  # Reduced height
+        self.correct_tree.setMaximumHeight(self.theme.dimensions['tree_maximum_height'])  # Prevent excessive growth
+        self.correct_tree.setColumnWidth(0, self.theme.layout['tree_index_column_width'])  # # column
+        self.correct_tree.setColumnWidth(1, self.theme.layout['tree_name_column_width'])  # Game name column
         self.correct_tree.setSelectionMode(QTreeWidget.SelectionMode.ExtendedSelection)  # Allow multiple selection
         correct_layout.addWidget(self.correct_tree)
         
@@ -281,10 +275,10 @@ class MainWindow(QMainWindow):
         ])
         self.missing_tree.setAlternatingRowColors(True)
         self.missing_tree.setSortingEnabled(True)
-        self.missing_tree.setMinimumHeight(250)  # Reduced height
-        self.missing_tree.setMaximumHeight(300)  # Prevent excessive growth
-        self.missing_tree.setColumnWidth(0, 50)  # # column
-        self.missing_tree.setColumnWidth(1, 300)  # Game name column
+        self.missing_tree.setMinimumHeight(self.theme.dimensions['tree_minimum_height'])  # Reduced height
+        self.missing_tree.setMaximumHeight(self.theme.dimensions['tree_maximum_height'])  # Prevent excessive growth
+        self.missing_tree.setColumnWidth(0, self.theme.layout['tree_index_column_width'])  # # column
+        self.missing_tree.setColumnWidth(1, self.theme.layout['tree_name_column_width'])  # Game name column
         self.missing_tree.setSelectionMode(QTreeWidget.SelectionMode.ExtendedSelection)  # Allow multiple selection
         self.missing_tree.setContextMenuPolicy(Qt.ContextMenuPolicy.CustomContextMenu)
         self.missing_tree.customContextMenuRequested.connect(self.show_missing_tree_context_menu)
@@ -301,10 +295,10 @@ class MainWindow(QMainWindow):
         ])
         self.unrecognized_tree.setAlternatingRowColors(True)
         self.unrecognized_tree.setSortingEnabled(True)
-        self.unrecognized_tree.setMinimumHeight(250)  # Reduced height
-        self.unrecognized_tree.setMaximumHeight(300)  # Prevent excessive growth
-        self.unrecognized_tree.setColumnWidth(0, 50)  # # column
-        self.unrecognized_tree.setColumnWidth(1, 300)  # Filename column
+        self.unrecognized_tree.setMinimumHeight(self.theme.dimensions['tree_minimum_height'])  # Reduced height
+        self.unrecognized_tree.setMaximumHeight(self.theme.dimensions['tree_maximum_height'])  # Prevent excessive growth
+        self.unrecognized_tree.setColumnWidth(0, self.theme.layout['tree_index_column_width'])  # # column
+        self.unrecognized_tree.setColumnWidth(1, self.theme.layout['tree_name_column_width'])  # Filename column
         self.unrecognized_tree.setSelectionMode(QTreeWidget.SelectionMode.ExtendedSelection)
         unrecognized_layout.addWidget(self.unrecognized_tree)
         
@@ -319,10 +313,10 @@ class MainWindow(QMainWindow):
         ])
         self.broken_tree.setAlternatingRowColors(True)
         self.broken_tree.setSortingEnabled(True)
-        self.broken_tree.setMinimumHeight(250)  # Reduced height
-        self.broken_tree.setMaximumHeight(300)  # Prevent excessive growth
-        self.broken_tree.setColumnWidth(0, 50)  # # column
-        self.broken_tree.setColumnWidth(1, 300)  # Filename column
+        self.broken_tree.setMinimumHeight(self.theme.dimensions['tree_minimum_height'])  # Reduced height
+        self.broken_tree.setMaximumHeight(self.theme.dimensions['tree_maximum_height'])  # Prevent excessive growth
+        self.broken_tree.setColumnWidth(0, self.theme.layout['tree_index_column_width'])  # # column
+        self.broken_tree.setColumnWidth(1, self.theme.layout['tree_name_column_width'])  # Filename column
         self.broken_tree.setSelectionMode(QTreeWidget.SelectionMode.ExtendedSelection)
         broken_layout.addWidget(self.broken_tree)
 
@@ -337,10 +331,10 @@ class MainWindow(QMainWindow):
         ])
         self.ignored_tree.setAlternatingRowColors(True)
         self.ignored_tree.setSortingEnabled(True)
-        self.ignored_tree.setMinimumHeight(250)  # Reduced height
-        self.ignored_tree.setMaximumHeight(300)  # Prevent excessive growth
-        self.ignored_tree.setColumnWidth(0, 50)  # # column
-        self.ignored_tree.setColumnWidth(1, 300)  # Game name column
+        self.ignored_tree.setMinimumHeight(self.theme.dimensions['tree_minimum_height'])  # Reduced height
+        self.ignored_tree.setMaximumHeight(self.theme.dimensions['tree_maximum_height'])  # Prevent excessive growth
+        self.ignored_tree.setColumnWidth(0, self.theme.layout['tree_index_column_width'])  # # column
+        self.ignored_tree.setColumnWidth(1, self.theme.layout['tree_name_column_width'])  # Game name column
         self.ignored_tree.setSelectionMode(QTreeWidget.SelectionMode.ExtendedSelection)  # Allow multiple selection
         self.ignored_tree.setContextMenuPolicy(Qt.ContextMenuPolicy.CustomContextMenu)
         self.ignored_tree.customContextMenuRequested.connect(self.show_ignored_tree_context_menu)
@@ -357,7 +351,7 @@ class MainWindow(QMainWindow):
         
         # Stats with detailed feedback
         self.rom_stats_label = QLabel("Total DAT: 0 | Matching: 0 | Missing: 0 | Unrecognised: 0 | Broken: 0 | Total ROMs: 0")
-        self.rom_stats_label.setStyleSheet("font-weight: bold; padding: 5px;")
+        self.rom_stats_label.setStyleSheet(f"font-weight: {self.theme.fonts['weight_bold']}; padding: {self.theme.layout['stats_label_padding']};")
         layout.addWidget(self.rom_stats_label)
         
         return panel
@@ -456,7 +450,7 @@ class MainWindow(QMainWindow):
     def create_bottom_panel(self) -> QWidget:
         """Create the bottom panel with filters and actions."""
         panel = QWidget()
-        panel.setMaximumHeight(300)  # Limit height to prevent overlap
+        panel.setMaximumHeight(self.theme.dimensions['panel_maximum_height'])  # Limit height to prevent overlap
         layout = QHBoxLayout(panel)
         layout.setSpacing(10)
         
@@ -467,14 +461,14 @@ class MainWindow(QMainWindow):
         filter_layout.setSpacing(15)
         
         # Region filters with drag-and-drop
-        self.region_filter = RegionFilterWidget(self.settings_manager)
+        self.region_filter = RegionFilterWidget(self.theme, self.settings_manager)
         self.region_filter.filters_changed.connect(self.apply_filters)
         filter_layout.addWidget(self.region_filter)
         
         # Language filters with scroll area and controls
         language_group = QGroupBox("🗣️ Languages")
         language_scroll = QScrollArea()
-        language_scroll.setMaximumHeight(120)
+        language_scroll.setMaximumHeight(self.theme.dimensions['language_scroll_maximum_height'])
         language_scroll.setWidgetResizable(True)
         language_widget = QWidget()
         self.language_filter_layout = QVBoxLayout(language_widget)
@@ -487,37 +481,13 @@ class MainWindow(QMainWindow):
         
         # Language control buttons
         lang_button_layout = QHBoxLayout()
-        self.select_all_languages_button = QPushButton("✅ Select All")
+        self.select_all_languages_button = QPushButton("Select All")
         self.select_all_languages_button.clicked.connect(self.select_all_languages)
-        self.select_all_languages_button.setStyleSheet(f"""
-            QPushButton {{
-                background-color: {self.colors['highlight']};
-                color: {self.colors['button_text']};
-                border: none;
-                padding: 4px 8px;
-                border-radius: 4px;
-                font-size: 10px;
-            }}
-            QPushButton:hover {{
-                background-color: {self.colors['highlight_hover']};
-            }}
-        """)
+        self.select_all_languages_button.setStyleSheet(self.theme.get_button_style("SelectAllButton"))
         
-        self.clear_all_languages_button = QPushButton("❌ Clear All")
+        self.clear_all_languages_button = QPushButton("Clear All")
         self.clear_all_languages_button.clicked.connect(self.clear_all_languages)
-        self.clear_all_languages_button.setStyleSheet(f"""
-            QPushButton {{
-                background-color: {self.colors['error']};
-                color: {self.colors['button_text']};
-                border: none;
-                padding: 4px 8px;
-                border-radius: 4px;
-                font-size: 10px;
-            }}
-            QPushButton:hover {{
-                background-color: {self.colors['error_hover']};
-            }}
-        """)
+        self.clear_all_languages_button.setStyleSheet(self.theme.get_button_style("ClearAllButton"))
         
         lang_button_layout.addWidget(self.select_all_languages_button)
         lang_button_layout.addWidget(self.clear_all_languages_button)
@@ -580,37 +550,13 @@ class MainWindow(QMainWindow):
         # Game type control buttons
         button_layout = QHBoxLayout()
         
-        self.select_all_types_button = QPushButton("✅ Select All Types")
+        self.select_all_types_button = QPushButton("Select All")
         self.select_all_types_button.clicked.connect(self.select_all_game_types)
-        self.select_all_types_button.setStyleSheet(f"""
-            QPushButton {{
-                background-color: {self.colors['highlight']};
-                color: {self.colors['button_text']};
-                border: none;
-                padding: 8px 16px;
-                border-radius: 4px;
-                font-weight: bold;
-            }}
-            QPushButton:hover {{
-                background-color: {self.colors['highlight_hover']};
-            }}
-        """)
+        self.select_all_types_button.setStyleSheet(self.theme.get_button_style("SelectAllButton"))
         
-        self.clear_all_types_button = QPushButton("❌ Clear All Types")
+        self.clear_all_types_button = QPushButton("Clear All")
         self.clear_all_types_button.clicked.connect(self.clear_all_game_types)
-        self.clear_all_types_button.setStyleSheet(f"""
-            QPushButton {{
-                background-color: {self.colors['error']};
-                color: {self.colors['button_text']};
-                border: none;
-                padding: 8px 16px;
-                border-radius: 4px;
-                font-weight: bold;
-            }}
-            QPushButton:hover {{
-                background-color: {self.colors['error_hover']};
-            }}
-        """)
+        self.clear_all_types_button.setStyleSheet(self.theme.get_button_style("ClearAllButton"))
         
         button_layout.addWidget(self.select_all_types_button)
         button_layout.addWidget(self.clear_all_types_button)
@@ -623,40 +569,31 @@ class MainWindow(QMainWindow):
         
         # Actions panel with premium styling
         actions_group = QGroupBox("🛠️ Actions")
-        actions_group.setStyleSheet(f"""
-            QGroupBox {{{{  
-                font-weight: bold;
-                border: 2px solid {{self.colors['border']}};
-                border-radius: 8px;
-                margin-top: 10px;
-                padding-top: 10px;
-            }}}}
-            QGroupBox::title {{{{  
-                subcontrol-origin: margin;
-                left: 10px;
-                padding: 0 5px 0 5px;
-            }}}}
-        """)
+        actions_group.setStyleSheet(self.theme.get_actions_group_style())
         actions_layout = QVBoxLayout(actions_group)
         actions_layout.setSpacing(10)
         
-        self.rename_button = QPushButton("✏️ Rename Wrong Filenames")
-        self.rename_button.setObjectName("premium_button")
+        self.rename_button = QPushButton("Rename Wrong Filenames")
+        self.rename_button.setIcon(qta.icon('fa5s.pen', color='#d6d6d6', scale_factor=0.8))
+        self.rename_button.setStyleSheet(self.theme.get_button_style("QMainButton"))
         self.rename_button.clicked.connect(self.rename_wrong_filenames)
         actions_layout.addWidget(self.rename_button)
         
-        self.move_extra_button = QPushButton("📦 Move Extra Files")
-        self.move_extra_button.setObjectName("premium_button")
+        self.move_extra_button = QPushButton("Move Extra Files")
+        self.move_extra_button.setIcon(qta.icon('fa5s.folder-open', color='#d6d6d6', scale_factor=0.8))
+        self.move_extra_button.setStyleSheet(self.theme.get_button_style("QMainButton"))
         self.move_extra_button.clicked.connect(self.move_extra_files)
         actions_layout.addWidget(self.move_extra_button)
         
-        self.move_broken_button = QPushButton("🔧 Move Broken Files")
-        self.move_broken_button.setObjectName("premium_button")
+        self.move_broken_button = QPushButton("Move Broken Files")
+        self.move_broken_button.setIcon(qta.icon('fa5s.exclamation-triangle', color='#d6d6d6', scale_factor=0.8))
+        self.move_broken_button.setStyleSheet(self.theme.get_button_style("QMainButton"))
         self.move_broken_button.clicked.connect(self.move_broken_files)
         actions_layout.addWidget(self.move_broken_button)
         
-        self.export_missing_button = QPushButton("📋 Export Missing List")
-        self.export_missing_button.setObjectName("premium_button")
+        self.export_missing_button = QPushButton("Export Missing List")
+        self.export_missing_button.setIcon(qta.icon('fa5s.file-export', color='#d6d6d6', scale_factor=0.8))
+        self.export_missing_button.setStyleSheet(self.theme.get_button_style("QMainButton"))
         self.export_missing_button.clicked.connect(self.export_missing_list)
         actions_layout.addWidget(self.export_missing_button)
         
@@ -666,7 +603,80 @@ class MainWindow(QMainWindow):
     
     def setup_menus(self):
         """Set up the menu bar."""
-        menubar = self.menuBar()
+        # Create a custom menu bar container
+        menu_container = QWidget()
+        menu_layout = QVBoxLayout(menu_container)
+        menu_layout.setContentsMargins(0, 0, 0, 15)  # Add bottom margin for padding visibility
+        menu_layout.setSpacing(0)
+        
+        # Create the actual menu bar
+        menubar = QMenuBar(menu_container)
+        menubar.setNativeMenuBar(False)  # Ensure menu bar is embedded in window
+        menubar.setCornerWidget(None)  # Remove any corner widget that might push menus right
+        
+        # Add menu bar to container
+        menu_layout.addWidget(menubar)
+        
+        # Create custom two-column widget
+        menu_columns_widget = QWidget()
+        menu_columns_widget.setObjectName("menu_columns_widget")
+        menu_columns_widget.setStyleSheet(self.theme.get_menu_columns_widget_style())
+        menu_columns_layout = QHBoxLayout(menu_columns_widget)
+        menu_columns_layout.setContentsMargins(10, 5, 10, 5)
+        menu_columns_layout.setSpacing(0)
+        
+        # Left column - UK flag icon
+        uk_flag_label = QLabel()
+        uk_flag_svg = '''<svg width="40" height="24" viewBox="0 0 60 30" xmlns="http://www.w3.org/2000/svg">
+        <rect width="60" height="30" fill="#012169"/>
+        <g stroke="#FFF" stroke-width="6">
+        <path d="m0,0 60,30 m0,-30 -60,30"/>
+        </g>
+        <g stroke="#C8102E" stroke-width="4">
+        <path d="m0,0 60,30 m0,-30 -60,30"/>
+        </g>
+        <path stroke="#FFF" stroke-width="10" d="M30,0 v30 M0,15 h60"/>
+        <path stroke="#C8102E" stroke-width="6" d="M30,0 v30 M0,15 h60"/>
+        </svg>'''
+        uk_flag_label.setText(uk_flag_svg)
+        uk_flag_label.setFixedSize(40, 24)
+        uk_flag_label.setAlignment(Qt.AlignmentFlag.AlignLeft | Qt.AlignmentFlag.AlignVCenter)
+        
+        # Right column - Action buttons
+        buttons_container = QWidget()
+        buttons_layout = QHBoxLayout(buttons_container)
+        buttons_layout.setContentsMargins(0, 0, 0, 0)
+        buttons_layout.setSpacing(5)
+        
+        # Create action buttons
+        self.scan_button = QPushButton("Scan ROM Folder")
+        self.scan_button.setIcon(qta.icon('fa5s.search', color='#d6d6d6', scale_factor=0.8))
+        self.scan_button.setStyleSheet(self.theme.get_button_style("ScanButton"))
+        self.scan_button.clicked.connect(lambda: self.scan_rom_folder(prompt_for_folder=True))
+        buttons_layout.addWidget(self.scan_button)
+        
+        self.import_dat_button = QPushButton("Import DAT Files")
+        self.import_dat_button.setIcon(qta.icon('fa5s.file-import', color='#d6d6d6', scale_factor=0.8))
+        self.import_dat_button.setStyleSheet(self.theme.get_button_style("QMainButton"))
+        self.import_dat_button.clicked.connect(self.import_dat_files)
+        buttons_layout.addWidget(self.import_dat_button)
+        
+        self.clear_rom_data_button = QPushButton("Clear ROM Data")
+        self.clear_rom_data_button.setIcon(qta.icon('fa5s.trash', color='#d6d6d6', scale_factor=0.8))
+        self.clear_rom_data_button.setStyleSheet(self.theme.get_button_style("ClearButton"))
+        self.clear_rom_data_button.clicked.connect(self.clear_rom_data)
+        buttons_layout.addWidget(self.clear_rom_data_button)
+        
+        # Add to layout
+        menu_columns_layout.addWidget(uk_flag_label, 0, Qt.AlignmentFlag.AlignLeft)
+        menu_columns_layout.addStretch()
+        menu_columns_layout.addWidget(buttons_container, 0, Qt.AlignmentFlag.AlignRight)
+        
+        # Add columns widget to menu container
+        menu_layout.addWidget(menu_columns_widget)
+        
+        # Set the custom container as the menu bar
+        self.setMenuWidget(menu_container)
         
         # File menu
         file_menu = menubar.addMenu("File")
@@ -806,8 +816,8 @@ class MainWindow(QMainWindow):
             
             # Color coding based on status
             if game['is_verified_dump']:
-                item.setBackground(0, QColor(200, 255, 200))  # Light green
-                item.setForeground(0, QColor(0, 0, 0))  # Black text
+                item.setBackground(0, QColor(self.theme.colors['tree_item_correct_bg']))  # Light green
+                item.setForeground(0, QColor(self.theme.colors['tree_item_correct_text']))  # Black text
             
             self.dat_tree.addTopLevelItem(item)
         
@@ -901,7 +911,7 @@ class MainWindow(QMainWindow):
         self.settings_manager.save_settings()
 
         # Use the custom ProgressDialog from ui.progress_dialog
-        self.scan_progress_dialog = ProgressDialog(title="Scanning ROMs...", parent=self)
+        self.scan_progress_dialog = ProgressDialog(title="Scanning ROMs...", parent=self, theme=self.theme)
         self.scan_progress_dialog.status_label.setText("Scanning in progress, please wait.")
         self.scan_progress_dialog.cancel_button.setEnabled(False) # Or True if you implement cancellation
         self.scan_progress_dialog.setModal(True)
@@ -2021,7 +2031,7 @@ class MainWindow(QMainWindow):
         moved_files_count = 0
         failed_moves_details = []
         
-        progress_dialog = ProgressDialog("Moving unrecognized files...", self)
+        progress_dialog = ProgressDialog("Moving unrecognized files...", self, theme=self.theme)
         progress_dialog.progress_bar.setRange(0, len(unrecognized_roms))
         progress_dialog.setWindowModality(Qt.WindowModality.WindowModal)
         progress_dialog.progress_bar.setValue(0)

@@ -15,17 +15,19 @@ from PyQt6.QtGui import QFont
 class ProgressDialog(QDialog):
     """Progress dialog for long-running operations."""
     
-    def __init__(self, title: str = "Progress", parent=None):
+    def __init__(self, title: str = "Progress", parent=None, theme=None):
         super().__init__(parent)
         
         self.cancelled = False
+        self.theme = theme
         self.setup_ui(title)
     
     def setup_ui(self, title: str):
         """Set up the user interface."""
         self.setWindowTitle(title)
         self.setModal(True)
-        self.resize(400, 200)
+        width, height = self.theme.get_progress_dialog_size() if self.theme else (400, 200)
+        self.resize(width, height)
         
         layout = QVBoxLayout(self)
         
@@ -42,12 +44,16 @@ class ProgressDialog(QDialog):
         # Details label
         self.details_label = QLabel("")
         self.details_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
-        self.details_label.setStyleSheet("color: gray; font-size: 10px;")
+        if self.theme:
+            self.details_label.setStyleSheet(self.theme.get_progress_dialog_details_style())
         layout.addWidget(self.details_label)
         
         # Log text (initially hidden)
         self.log_text = QTextEdit()
-        self.log_text.setMaximumHeight(100)
+        if self.theme:
+            self.log_text.setMaximumHeight(self.theme.get_progress_dialog_log_max_height())
+        else:
+            self.log_text.setMaximumHeight(100)  # Fallback
         self.log_text.setVisible(False)
         layout.addWidget(self.log_text)
         
@@ -55,12 +61,14 @@ class ProgressDialog(QDialog):
         button_layout = QHBoxLayout()
         
         self.show_log_button = QPushButton("Show Log")
+        self.show_log_button.setStyleSheet(self.theme.get_button_style("QMainButton"))
         self.show_log_button.clicked.connect(self.toggle_log)
         button_layout.addWidget(self.show_log_button)
         
         button_layout.addStretch()
         
         self.cancel_button = QPushButton("Cancel")
+        self.cancel_button.setStyleSheet(self.theme.get_button_style("QMainButton"))
         self.cancel_button.clicked.connect(self.cancel_operation)
         button_layout.addWidget(self.cancel_button)
         
@@ -97,11 +105,13 @@ class ProgressDialog(QDialog):
         if self.log_text.isVisible():
             self.log_text.setVisible(False)
             self.show_log_button.setText("Show Log")
-            self.resize(400, 200)
+            width, height = self.theme.get_progress_dialog_size() if self.theme else (400, 200)
+            self.resize(width, height)
         else:
             self.log_text.setVisible(True)
             self.show_log_button.setText("Hide Log")
-            self.resize(400, 300)
+            width, height = self.theme.get_progress_dialog_expanded_size() if self.theme else (400, 300)
+            self.resize(width, height)
     
     def cancel_operation(self):
         """Cancel the current operation."""

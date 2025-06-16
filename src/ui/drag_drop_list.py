@@ -20,8 +20,10 @@ class DragDropListWidget(QListWidget):
     items_reordered = pyqtSignal()  # Emitted when items are reordered
     item_dropped_from_external = pyqtSignal(str, int)  # Emitted when item is dropped from another list with position
     
-    def __init__(self, parent=None):
+    def __init__(self, theme, parent=None):
         super().__init__(parent)
+        self.theme = theme
+        self.original_style = None  # Will be set by parent widget
         
         # Enable drag and drop
         self.setDragDropMode(QAbstractItemView.DragDropMode.DragDrop)
@@ -36,25 +38,17 @@ class DragDropListWidget(QListWidget):
         """Handle drag enter events."""
         if event.mimeData().hasText():
             event.acceptProposedAction()
-            self.setStyleSheet(self.styleSheet() + """
-                QListWidget {
-                    border: 3px solid #0078d4;
-                    background-color: rgba(0, 120, 212, 0.1);
-                }
-            """)
+            # Highlight the widget
+            self.setStyleSheet(self.theme.get_drag_drop_highlight_style())
         else:
-            super().dragEnterEvent(event)
+            event.ignore()
     
     def dragLeaveEvent(self, event):
         # Reset styling when drag leaves
         self.drag_indicator_position = -1
         self.update()
-        # Remove drag highlight styling
-        style = self.styleSheet()
-        if "border: 3px solid #0078d4" in style:
-            style = style.replace("border: 3px solid #0078d4;", "")
-            style = style.replace("background-color: rgba(0, 120, 212, 0.1);", "")
-            self.setStyleSheet(style)
+        # Remove drag highlight styling - restore original style
+        self.restore_original_style()
         super().dragLeaveEvent(event)
     
     def dragMoveEvent(self, event):
@@ -87,11 +81,7 @@ class DragDropListWidget(QListWidget):
             
             # Reset drag indicator and styling
             self.drag_indicator_position = -1
-            style = self.styleSheet()
-            if "border: 3px solid #0078d4" in style:
-                style = style.replace("border: 3px solid #0078d4;", "")
-                style = style.replace("background-color: rgba(0, 120, 212, 0.1);", "")
-                self.setStyleSheet(style)
+            self.restore_original_style()
             
             # Check if this is an external drop (from another widget)
             if event.source() != self:
@@ -109,25 +99,37 @@ class DragDropListWidget(QListWidget):
             # Handle internal moves
             super().dropEvent(event)
     
+    def set_original_style(self, style):
+        """Set the original style to restore after drag operations."""
+        self.original_style = style
+    
+    def restore_original_style(self):
+        """Restore the original style after drag operations."""
+        if self.original_style:
+            self.setStyleSheet(self.original_style)
+        else:
+            # Fallback to normal style if no original style is set
+            self.setStyleSheet(self.theme.get_drag_drop_normal_style())
+    
     def paintEvent(self, event):
         super().paintEvent(event)
         
         # Draw drop indicator line
         if self.drag_indicator_position >= 0:
             painter = QPainter(self.viewport())
-            painter.setPen(QPen(QColor(0, 120, 212), 3))
+            painter.setPen(QPen(QColor(self.theme.colors['drag_drop']['highlight_border']), 2))
             
             if self.drag_indicator_position < self.count():
-                rect = self.visualRect(self.model().index(self.drag_indicator_position, 0))
+                rect = self.visualItemRect(self.item(self.drag_indicator_position))
                 y = rect.top()
             else:
                 if self.count() > 0:
-                    rect = self.visualRect(self.model().index(self.count() - 1, 0))
+                    rect = self.visualItemRect(self.item(self.count() - 1))
                     y = rect.bottom()
                 else:
                     y = 0
             
-            painter.drawLine(0, y, self.width(), y)
+            painter.drawLine(0, y, self.viewport().width(), y)
             painter.end()
     
     def startDrag(self, supportedActions):
@@ -265,11 +267,14 @@ class RegionFilterWidget(QWidget):
             # Fallback to empty icon if SVG not found
             return QIcon()
     
-    def __init__(self, settings_manager=None, system_id=None, parent=None):
+    def __init__(self, theme, settings_manager=None, system_id=None, parent=None):
         super().__init__(parent)
+        self.setAutoFillBackground(True)  # Ensure background color is applied
+        self.theme = theme
         self.settings_manager = settings_manager
         self.current_system_id = system_id
         self.all_known_regions = list(self.REGION_FLAGS.keys()) # Keep a list of all possible regions
+        self.setFocusPolicy(Qt.FocusPolicy.NoFocus)  # Prevent focus border on main widget
         self.setup_ui()
         self.load_region_settings() # Load settings after UI is set up
 
@@ -285,7 +290,9 @@ class RegionFilterWidget(QWidget):
         
         # Title
         title = QLabel("🌍 Region Priority Filter")
-        title.setStyleSheet("font-weight: bold; font-size: 14px; margin-bottom: 5px;")
+        title.setStyleSheet(self.theme.get_drag_drop_title_style())
+        title.setFocusPolicy(Qt.FocusPolicy.NoFocus)  # Prevent focus border
+        title.setAttribute(Qt.WidgetAttribute.WA_TransparentForMouseEvents, True)  # Prevent mouse events that could trigger focus
         layout.addWidget(title)
         
         # Main content layout with two columns
@@ -296,38 +303,22 @@ class RegionFilterWidget(QWidget):
         
         # Available regions label
         left_label = QLabel("Available Regions")
-        left_label.setStyleSheet("font-weight: bold;")
+        left_label.setStyleSheet(self.theme.get_drag_drop_label_style())
+        left_label.setFocusPolicy(Qt.FocusPolicy.NoFocus)  # Prevent focus border
         left_column.addWidget(left_label)
         
         # Available regions list
-        self.available_list = DragDropListWidget()
+        self.available_list = DragDropListWidget(self.theme)
+        self.available_list.setObjectName("drag_drop_list")
         self.available_list.setAcceptDrops(True)
         self.available_list.setDragDropMode(QAbstractItemView.DragDropMode.DragDrop)
         self.available_list.setMinimumHeight(150)  # Reduce height to fit interface
         self.available_list.setMaximumHeight(200)  # Set maximum height to prevent overflow
         self.available_list.setMinimumWidth(180)  # Increase width for icons
         self.available_list.setIconSize(QSize(20, 15))  # Set icon size for flags
-        self.available_list.setStyleSheet("""
-            QListWidget { 
-                background-color: #3A3A3A; 
-                padding: 5px;
-                border: 2px solid #555;
-                border-radius: 5px;
-            }
-            QListWidget::item {
-                padding: 8px;
-                margin: 2px;
-                border-radius: 3px;
-                background-color: #4A4A4A;
-            }
-            QListWidget::item:selected {
-                background-color: #0078d4;
-                border: 2px solid #106ebe;
-            }
-            QListWidget::item:hover {
-                background-color: #5A5A5A;
-            }
-        """)
+        available_style = self.theme.get_drag_drop_available_list_style()
+        self.available_list.setStyleSheet(available_style)
+        self.available_list.set_original_style(available_style)
         left_column.addWidget(self.available_list)
         
         # Add stretch to fill remaining space
@@ -339,17 +330,15 @@ class RegionFilterWidget(QWidget):
         buttons_layout = QVBoxLayout()
         buttons_layout.addStretch()
         
-        self.ignore_button = QPushButton("→")
+        self.ignore_button = QPushButton("⮞")
         self.ignore_button.setToolTip("Move to ignore list")
-        self.ignore_button.setMaximumWidth(30)
-        self.ignore_button.setStyleSheet("QPushButton { color: black; font-weight: bold; font-size: 14px; }")
+        self.ignore_button.setStyleSheet(self.theme.get_button_style("CircularMoveButton"))
         self.ignore_button.clicked.connect(self.move_to_ignore)
         buttons_layout.addWidget(self.ignore_button)
         
-        self.restore_button = QPushButton("←")
+        self.restore_button = QPushButton("⮜")
         self.restore_button.setToolTip("Restore from ignore list")
-        self.restore_button.setMaximumWidth(30)
-        self.restore_button.setStyleSheet("QPushButton { color: black; font-weight: bold; font-size: 14px; }")
+        self.restore_button.setStyleSheet(self.theme.get_button_style("CircularMoveButton"))
         self.restore_button.clicked.connect(self.move_to_available)
         buttons_layout.addWidget(self.restore_button)
         
@@ -361,39 +350,22 @@ class RegionFilterWidget(QWidget):
         
         # Ignored regions label
         right_label = QLabel("Ignored Regions")
-        right_label.setStyleSheet("font-weight: bold; color: #d32f2f;")
+        right_label.setStyleSheet(self.theme.get_drag_drop_label_style())
+        right_label.setFocusPolicy(Qt.FocusPolicy.NoFocus)  # Prevent focus border
         right_column.addWidget(right_label)
         
         # Ignored regions list (smaller)
-        self.ignored_list = DragDropListWidget()
+        self.ignored_list = DragDropListWidget(self.theme)
+        self.ignored_list.setObjectName("drag_drop_list")
         self.ignored_list.setAcceptDrops(True)
         self.ignored_list.setDragDropMode(QAbstractItemView.DragDropMode.DragDrop)
         self.ignored_list.setMinimumHeight(120)  # Much smaller height
         self.ignored_list.setMaximumHeight(120)  # Prevent expansion
         self.ignored_list.setMinimumWidth(180)  # Same width as available list
         self.ignored_list.setIconSize(QSize(20, 15))  # Set icon size for flags
-        self.ignored_list.setStyleSheet("""
-            QListWidget { 
-                background-color: #8B0000; 
-                color: white;
-                padding: 5px;
-                border: 2px solid #AA0000;
-                border-radius: 5px;
-            }
-            QListWidget::item {
-                padding: 8px;
-                margin: 2px;
-                border-radius: 3px;
-                background-color: #AA0000;
-            }
-            QListWidget::item:selected {
-                background-color: #CC0000;
-                border: 2px solid #FF0000;
-            }
-            QListWidget::item:hover {
-                background-color: #BB0000;
-            }
-        """)
+        ignored_style = self.theme.get_drag_drop_ignored_list_style()
+        self.ignored_list.setStyleSheet(ignored_style)
+        self.ignored_list.set_original_style(ignored_style)
         right_column.addWidget(self.ignored_list)
         
         # Remove duplicates checkbox below ignored regions

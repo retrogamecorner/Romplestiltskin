@@ -10,6 +10,9 @@ python-Levenshtein>=0.20.0
 # Progress bars and UI enhancements
 tqdm>=4.65.0
 
+# Icon fonts for buttons
+qtawesome>=1.2.0
+
 # For building executable
 PyInstaller>=5.10.0
 
