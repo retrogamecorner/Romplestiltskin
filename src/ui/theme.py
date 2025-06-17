@@ -1003,19 +1003,45 @@ class Theme:
     def get_drag_drop_highlight_style(self):
         """Get drag and drop highlight style for DragDropListWidget."""
         # This style is applied directly to the DragDropListWidget instance.
-        return """
-            border: none !important;
-            outline: none !important;
-            background-color: rgba(0, 120, 255, 0.05) !important; /* Subtle highlight or transparent */
+        return f"""
+            QListWidget {{
+                border: none !important;
+                outline: none !important;
+                background-color: rgba(0, 120, 255, 0.05) !important; /* Subtle highlight or transparent */
+                font-family: {self.fonts['family']};
+                font-size: {self.fonts['size_medium']}px;
+                font-weight: normal;
+            }}
+            QListWidget::item {{
+                padding: {self.spacing['small']}px;
+                border: none;
+                outline: none;
+                font-family: {self.fonts['family']};
+                font-size: {self.fonts['size_medium']}px;
+                font-weight: normal;
+            }}
         """
     
     def get_drag_drop_normal_style(self):
         """Get normal style for DragDropListWidget."""
         # This style is applied directly to the DragDropListWidget instance.
         return f"""
-            border: {self.dimensions['border_width']}px solid {self.colors['border']};
-            background-color: {self.colors['medium_gray']};
-            outline: none !important;
+            QListWidget {{
+                border: {self.dimensions['border_width']}px solid {self.colors['border']};
+                background-color: {self.colors['medium_gray']};
+                outline: none !important;
+                font-family: {self.fonts['family']};
+                font-size: {self.fonts['size_medium']}px;
+                font-weight: normal;
+            }}
+            QListWidget::item {{
+                padding: {self.spacing['small']}px;
+                border: none;
+                outline: none;
+                font-family: {self.fonts['family']};
+                font-size: {self.fonts['size_medium']}px;
+                font-weight: normal;
+            }}
         """
     
     def get_drag_drop_available_list_style(self):
