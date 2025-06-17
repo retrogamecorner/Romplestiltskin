@@ -1408,3 +1408,11 @@ class Theme:
                 widget.setFixedWidth(value)
             elif 'height' in dimension_key:
                 widget.setFixedHeight(value)
+    
+    def get_dat_stats_label_style(self):
+        """Get style for DAT stats label."""
+        return f"font-weight: {self.fonts['weight_bold']}; font-size: {self.fonts['size_small']}px; color: #909090; padding: {self.layout['stats_label_padding']}; background-color: #3e3e3e;"
+    
+    def get_rom_stats_label_style(self):
+        """Get style for ROM stats label."""
+        return f"font-weight: {self.fonts['weight_bold']}; font-size: {self.fonts['size_small']}px; color: #909090; padding: {self.layout['stats_label_padding']}; background-color: #3e3e3e;"

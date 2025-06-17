@@ -241,7 +241,7 @@ class MainWindow(QMainWindow):
         
         # Stats with detailed feedback
         self.dat_stats_label = QLabel("Total: 0 | Filtered Out: 0 | Showing: 0")
-        self.dat_stats_label.setStyleSheet(f"font-weight: {self.theme.fonts['weight_bold']}; padding: {self.theme.layout['stats_label_padding']};")
+        self.dat_stats_label.setStyleSheet(self.theme.get_dat_stats_label_style())
         layout.addWidget(self.dat_stats_label)
         
         return panel
@@ -359,7 +359,7 @@ class MainWindow(QMainWindow):
         
         # Stats with detailed feedback
         self.rom_stats_label = QLabel("Total DAT: 0 | Matching: 0 | Missing: 0 | Unrecognised: 0 | Broken: 0 | Total ROMs: 0")
-        self.rom_stats_label.setStyleSheet(f"font-weight: {self.theme.fonts['weight_bold']}; padding: {self.theme.layout['stats_label_padding']};")
+        self.rom_stats_label.setStyleSheet(self.theme.get_rom_stats_label_style())
         layout.addWidget(self.rom_stats_label)
         
         return panel
