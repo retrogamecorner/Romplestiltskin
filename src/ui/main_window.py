@@ -472,9 +472,9 @@ class MainWindow(QMainWindow):
         filter_group_main_layout.setContentsMargins(0, 10, 0, 0) # Top margin for title, 0 for others initially
         filter_group_main_layout.setSpacing(0) # No spacing between title area and content area initially
 
-        # Horizontal line - this will be styled by QFrame#horizontalLine in theme.py
+        # Horizontal line - this will be styled by QFrame#filtersHorizontalLine in theme.py
         line_separator = QFrame()
-        line_separator.setObjectName("horizontalLine")
+        line_separator.setObjectName("filtersHorizontalLine")
         line_separator.setFrameShape(QFrame.HLine)
         line_separator.setFrameShadow(QFrame.Sunken)
         filter_group_main_layout.addWidget(line_separator)

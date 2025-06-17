@@ -1278,8 +1278,15 @@ class Theme:
                 min-height: 2px;
                 max-height: 2px;
                 background-color: #484848;
-                margin-left: {self.spacing['medium']}px;
-                margin-right: {self.spacing['medium']}px;
+                margin-left: 0px;
+                margin-right: 0px;
+            }}
+            QFrame#filtersHorizontalLine {{
+                min-height: 2px;
+                max-height: 2px;
+                background-color: #484848;
+                margin-left: 10px;
+                margin-right: 10px;
             }}
         """
     
