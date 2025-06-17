@@ -214,7 +214,15 @@ class MainWindow(QMainWindow):
     def create_dat_panel(self) -> QWidget:
         """Create the DAT games panel."""
         panel = QGroupBox("DAT Games")
-        layout = QVBoxLayout(panel)
+        panel.setStyleSheet(self.theme.get_actions_group_style()) # Apply the style to the GroupBox
+        layout = QVBoxLayout(panel) # Set the layout directly on the panel
+
+        # Add a QFrame as a horizontal line separator
+        line_separator = QFrame()
+        line_separator.setObjectName("horizontalLine") # For styling
+        line_separator.setFrameShape(QFrame.HLine)
+        line_separator.setFrameShadow(QFrame.Sunken)
+        layout.addWidget(line_separator)
         
         # Games tree
         self.dat_tree = QTreeWidget()
