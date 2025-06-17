@@ -288,12 +288,7 @@ class RegionFilterWidget(QWidget):
         """Set up the user interface."""
         layout = QVBoxLayout(self)
         
-        # Title
-        title = QLabel("🌍 Region Priority Filter")
-        title.setStyleSheet(self.theme.get_drag_drop_title_style())
-        title.setFocusPolicy(Qt.FocusPolicy.NoFocus)  # Prevent focus border
-        title.setAttribute(Qt.WidgetAttribute.WA_TransparentForMouseEvents, True)  # Prevent mouse events that could trigger focus
-        layout.addWidget(title)
+
         
         # Main content layout with two columns
         main_content = QHBoxLayout()

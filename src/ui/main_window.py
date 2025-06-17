@@ -455,9 +455,29 @@ class MainWindow(QMainWindow):
         layout.setSpacing(10)
         
         # Filter panel with improved styling
-        filter_group = QGroupBox("🔍 Filters")
+        filter_group = QGroupBox("Filters")
         filter_group.setObjectName("filter_group")
-        filter_layout = QHBoxLayout(filter_group)  # Changed to horizontal
+        filter_group.setStyleSheet(self.theme.get_actions_group_style()) # Apply the same style as actions_group
+        
+        # Vertical layout for the entire filter_group (title, line, content)
+        filter_group_main_layout = QVBoxLayout(filter_group)
+        filter_group_main_layout.setContentsMargins(0, 10, 0, 0) # Top margin for title, 0 for others initially
+        filter_group_main_layout.setSpacing(0) # No spacing between title area and content area initially
+
+        # Horizontal line - this will be styled by QFrame#horizontalLine in theme.py
+        line_separator = QFrame()
+        line_separator.setObjectName("horizontalLine")
+        line_separator.setFrameShape(QFrame.HLine)
+        line_separator.setFrameShadow(QFrame.Sunken)
+        filter_group_main_layout.addWidget(line_separator)
+
+        # Horizontal layout for the actual filter widgets (region, language, type)
+        filter_content_layout = QHBoxLayout()
+        filter_content_layout.setContentsMargins(10, 5, 10, 10) # Padding for the content widgets
+        filter_group_main_layout.addLayout(filter_content_layout)
+
+        filter_layout = filter_content_layout # This is where region_filter, language_group, etc. will be added
+
         filter_layout.setSpacing(15)
         
         # Region filters with drag-and-drop
@@ -466,7 +486,8 @@ class MainWindow(QMainWindow):
         filter_layout.addWidget(self.region_filter)
         
         # Language filters with scroll area and controls
-        language_group = QGroupBox("🗣️ Languages")
+        language_group = QGroupBox("Languages")
+        language_group.setObjectName("language_group_box")
         language_scroll = QScrollArea()
         language_scroll.setMaximumHeight(self.theme.dimensions['language_scroll_maximum_height'])
         language_scroll.setWidgetResizable(True)
@@ -497,7 +518,8 @@ class MainWindow(QMainWindow):
         filter_layout.addWidget(language_group)
         
         # Type filter checkboxes - all start checked
-        type_group = QGroupBox("🎮 Game Types")
+        type_group = QGroupBox("Game Types")
+        type_group.setObjectName("type_group_box")
         type_layout = QVBoxLayout(type_group)
         type_layout.setSpacing(5)
         

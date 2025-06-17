@@ -292,11 +292,33 @@ class Theme:
         /* Filter group boxes with enhanced styling */
         QGroupBox[objectName="filter_group"] {{
             background: {self.colors['group_bg']}; /* Ensure this is #3e3e3e */
-            border: {self.dimensions['border_width_thick']}px solid {self.colors['border']};
+            border: {self.dimensions['border_width_thick']}px solid #484848;
             border-radius: {self.dimensions['border_radius_large']}px;
             margin-top: {self.layout['filter_group_margin_top']}px;
             padding-top: {self.spacing['xlarge']}px;
             font-weight: {self.fonts['weight_bold']};
+        }}
+
+        /* Language group box styling */
+        QGroupBox[objectName="language_group_box"] {{
+            background: {self.colors['group_bg']};
+            border: {self.dimensions['border_width']}px solid #484848 !important;
+            border-radius: {self.dimensions['border_radius']}px;
+            margin-top: {self.layout['group_margin_top']}px;
+            font-weight: {self.fonts['weight_bold']};
+            padding-top: {self.spacing['xlarge']}px;
+            color: {self.colors['text']};
+        }}
+
+        /* Type group box styling */
+        QGroupBox[objectName="type_group_box"] {{
+            background: {self.colors['group_bg']};
+            border: {self.dimensions['border_width']}px solid #484848 !important;
+            border-radius: {self.dimensions['border_radius']}px;
+            margin-top: {self.layout['group_margin_top']}px;
+            font-weight: {self.fonts['weight_bold']};
+            padding-top: {self.spacing['xlarge']}px;
+            color: {self.colors['text']};
         }}
         
         QGroupBox::title {{
@@ -542,16 +564,20 @@ class Theme:
             width: 16px;
             height: 16px;
             border: 1px solid {self.colors['group_bg']};
-            border-radius: 0px;
-            background-color: {self.colors['medium_gray']};
+            border-radius: 3px;
+            /* background-color: {self.colors['medium_gray']}; */
+            background: none !important;
+            border: 2px solid #484848;
         }}
         
         QCheckBox::indicator:checked {{
             width: 16px;
             height: 16px;
-            border: 1px solid {self.colors['group_bg']};
-            border-radius: 0px;
-            background-color: {self.colors['medium_gray']};
+            /* border: 1px solid {self.colors['group_bg']}; */
+            border: 2px solid #484848;
+            border-radius: 3px;
+            /* background-color: {self.colors['medium_gray']}; */
+            background: none !important;
             image: url(src/ui/flags/checkmark.svg);
         }}
         
@@ -647,7 +673,7 @@ class Theme:
                     color: {self.colors['button_text']};
                     border: 1px solid {self.colors['border']};
                     border-radius: 8px;
-                    padding: 1px 3px;
+                    padding: 0px 5px 3px 5px;
                     font-family: 'Segoe UI', Arial, sans-serif;
                     font-weight: normal;
                     font-size: {self.fonts['size_normal']}px;
@@ -666,7 +692,7 @@ class Theme:
                     color: {self.colors['button_text']};
                     border: 1px solid #6b211e;
                     border-radius: 8px;
-                    padding: 1px 3px;
+                    padding: 0px 5px 3px 5px;
                     font-family: 'Segoe UI', Arial, sans-serif;
                     font-weight: normal;
                     font-size: {self.fonts['size_normal']}px;
@@ -1245,6 +1271,8 @@ class Theme:
                 min-height: 2px;
                 max-height: 2px;
                 background-color: #484848;
+                margin-left: {self.spacing['medium']}px;
+                margin-right: {self.spacing['medium']}px;
             }}
         """
     
