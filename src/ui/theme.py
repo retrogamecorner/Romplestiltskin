@@ -299,27 +299,8 @@ class Theme:
             font-weight: {self.fonts['weight_bold']};
         }}
 
-        /* Language group box styling */
-        QGroupBox[objectName="language_group_box"] {{
-            background: {self.colors['group_bg']};
-            border: {self.dimensions['border_width']}px solid #484848 !important;
-            border-radius: {self.dimensions['border_radius']}px;
-            margin-top: {self.layout['group_margin_top']}px;
-            font-weight: {self.fonts['weight_bold']};
-            padding-top: {self.spacing['xlarge']}px;
-            color: {self.colors['text']};
-        }}
 
-        /* Type group box styling */
-        QGroupBox[objectName="type_group_box"] {{
-            background: {self.colors['group_bg']};
-            border: {self.dimensions['border_width']}px solid #484848 !important;
-            border-radius: {self.dimensions['border_radius']}px;
-            margin-top: {self.layout['group_margin_top']}px;
-            font-weight: {self.fonts['weight_bold']};
-            padding-top: {self.spacing['xlarge']}px;
-            color: {self.colors['text']};
-        }}
+        /* Language and Type group box styling will now be primarily determined by get_actions_group_style or general QGroupBox styling */
         
         QGroupBox::title {{
             subcontrol-origin: margin;
@@ -1257,7 +1238,7 @@ class Theme:
             QGroupBox {{
                 background: {self.colors['group_bg']};
                 font-weight: {self.fonts['weight_bold']};
-                border: 2px solid {self.colors['border']};
+                border: 2px solid #484848; /* Changed to #484848 */
                 border-radius: {self.dimensions['border_radius_medium']}px;
                 padding: 30px 0px 10px 0px; /* Increased top padding to 40px */
             }}
