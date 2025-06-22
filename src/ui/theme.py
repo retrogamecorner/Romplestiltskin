@@ -366,7 +366,10 @@ class Theme:
         QTreeWidget::item {{
             background-color: #3e3e3e;
             border-bottom: 2px solid #4e4e4e;
-            padding: {self.spacing['small']}px;
+            padding-top: {self.spacing['small']}px;
+            padding-bottom: {self.spacing['small']}px;
+            padding-right: {self.spacing['small']}px;
+            padding-left: {self.spacing['small']}px;
             min-height: {self.dimensions['list_item_height']}px;
         }}
 

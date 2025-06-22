@@ -231,6 +231,7 @@ class MainWindow(QMainWindow):
             "#", "Game Name", "Region", "Language", "Size", "CRC32"
         ])
         self.dat_tree.setAlternatingRowColors(True)
+        self.dat_tree.setIndentation(0)
         self.dat_tree.setSortingEnabled(True)
         size_policy = QSizePolicy(QSizePolicy.Policy.Preferred, QSizePolicy.Policy.Expanding)
         self.dat_tree.setSizePolicy(size_policy)
@@ -268,6 +269,7 @@ class MainWindow(QMainWindow):
             "#", "Game Name", "Region", "Language", "CRC32"
         ])
         self.correct_tree.setAlternatingRowColors(True)
+        self.correct_tree.setIndentation(0)
         self.correct_tree.setSortingEnabled(True)
         self.correct_tree.setMinimumHeight(self.theme.dimensions['tree_minimum_height'])  # Reduced height
         self.correct_tree.setMaximumHeight(self.theme.dimensions['tree_maximum_height'])  # Prevent excessive growth
@@ -286,6 +288,7 @@ class MainWindow(QMainWindow):
             "#", "Game Name", "Region", "Language", "CRC32"
         ])
         self.missing_tree.setAlternatingRowColors(True)
+        self.missing_tree.setIndentation(0)
         self.missing_tree.setSortingEnabled(True)
         self.missing_tree.setMinimumHeight(self.theme.dimensions['tree_minimum_height'])  # Reduced height
         self.missing_tree.setMaximumHeight(self.theme.dimensions['tree_maximum_height'])  # Prevent excessive growth
@@ -306,6 +309,7 @@ class MainWindow(QMainWindow):
             "#", "File Name", "CRC32"
         ])
         self.unrecognized_tree.setAlternatingRowColors(True)
+        self.unrecognized_tree.setIndentation(0)
         self.unrecognized_tree.setSortingEnabled(True)
         self.unrecognized_tree.setMinimumHeight(self.theme.dimensions['tree_minimum_height'])  # Reduced height
         self.unrecognized_tree.setMaximumHeight(self.theme.dimensions['tree_maximum_height'])  # Prevent excessive growth
@@ -324,6 +328,7 @@ class MainWindow(QMainWindow):
             "#", "File Name", "Error"
         ])
         self.broken_tree.setAlternatingRowColors(True)
+        self.broken_tree.setIndentation(0)
         self.broken_tree.setSortingEnabled(True)
         self.broken_tree.setMinimumHeight(self.theme.dimensions['tree_minimum_height'])  # Reduced height
         self.broken_tree.setMaximumHeight(self.theme.dimensions['tree_maximum_height'])  # Prevent excessive growth
@@ -342,6 +347,7 @@ class MainWindow(QMainWindow):
             "#", "Game Name", "Region", "Language", "CRC32"
         ])
         self.ignored_tree.setAlternatingRowColors(True)
+        self.ignored_tree.setIndentation(0)
         self.ignored_tree.setSortingEnabled(True)
         self.ignored_tree.setMinimumHeight(self.theme.dimensions['tree_minimum_height'])  # Reduced height
         self.ignored_tree.setMaximumHeight(self.theme.dimensions['tree_maximum_height'])  # Prevent excessive growth
