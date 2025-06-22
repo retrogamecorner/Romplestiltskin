@@ -293,18 +293,9 @@ class Theme:
             color: {self.colors['text']};
         }}
         
-        /* Filter group boxes with enhanced styling */
-        QGroupBox[objectName="filter_group"] QCheckBox, QGroupBox[objectName="filter_group"] QLabel {{
+        /* Ensure checkboxes, labels, scroll areas and widgets in group boxes have transparent backgrounds */
+        QGroupBox QCheckBox, QGroupBox QLabel, QGroupBox QScrollArea, QGroupBox QScrollArea > QWidget {{
             background-color: transparent;
-        }}
-
-        QGroupBox[objectName="filter_group"] {{
-            background: {self.colors['group_bg']}; /* Ensure this is #3e3e3e */
-            border: {self.dimensions['border_width_thick']}px solid #484848;
-            border-radius: {self.dimensions['border_radius_large']}px;
-            margin-top: {self.layout['filter_group_margin_top']}px;
-            padding-top: {self.spacing['xlarge']}px;
-            font-weight: {self.fonts['weight_bold']};
         }}
 
 

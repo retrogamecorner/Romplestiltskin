@@ -474,6 +474,7 @@ class MainWindow(QMainWindow):
         # Filter panel with improved styling
         filter_group = QGroupBox("Filters")
         filter_group.setObjectName("filter_group")
+        filter_group.setStyleSheet(self.theme.get_actions_group_style())
 
         
         # Vertical layout for the entire filter_group (title, line, content)
@@ -508,7 +509,10 @@ class MainWindow(QMainWindow):
         language_scroll = QScrollArea()
         language_scroll.setMaximumHeight(self.theme.dimensions['language_scroll_maximum_height'])
         language_scroll.setWidgetResizable(True)
+        language_scroll.setStyleSheet("background-color: transparent;")
+        language_scroll.setFrameShape(QFrame.Shape.NoFrame)  # Remove the frame border
         language_widget = QWidget()
+        language_widget.setStyleSheet("background-color: transparent;")
         self.language_filter_layout = QVBoxLayout(language_widget)
         self.language_filter_layout.setSpacing(2)
         self.language_checkboxes = {}
@@ -1818,6 +1822,7 @@ class MainWindow(QMainWindow):
             checkbox = QCheckBox(language)
             checkbox.setChecked(True)  # Start with all checked
             checkbox.stateChanged.connect(self.apply_filters)
+            checkbox.setStyleSheet("background-color: transparent;")
             self.language_filter_layout.addWidget(checkbox)
             self.language_checkboxes[language] = checkbox
     
