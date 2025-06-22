@@ -39,7 +39,7 @@ class Theme:
             'button_text': '#ffffff',
             'selection': '#4a9eff',  # Same as highlight
             'shadow': '#1a1a1a',  # Dark shadow color for button effects
-            'group_bg': '#3e3e3e',  # Added missing group background color
+            'group_bg': '#3e3e3e',  # Background color for group boxes
             # Tree item colors
             'tree_item_correct_bg': '#c8ffc8',  # Light green (200, 255, 200)
             'tree_item_correct_text': '#000000',  # Black text (0, 0, 0)
@@ -215,10 +215,20 @@ class Theme:
         }}
 
         QWidget {{
-            background-color: {self.colors['background']};
+            background-color: {self.colors['background']}; 
             color: {self.colors['text']};
             font-family: {self.fonts['family']};
             font-size: {self.fonts['size_normal']}px;
+        }}
+        
+        /* Panel containers should be transparent */
+        QWidget#bottom_panel {{
+            background-color: transparent;
+        }}
+        
+        /* Group boxes should have central_widget color */
+        QGroupBox#dat_panel, QGroupBox#rom_panel, QGroupBox#actions_panel, QGroupBox#filter_group {{
+            background-color: {self.colors['central_widget']};
         }}
         
         /* Main window */
@@ -229,7 +239,7 @@ class Theme:
         
         /* Central widget to show padding */
         QMainWindow > QWidget {{
-            background-color: {self.colors['background']};
+            background-color: {self.colors['central_widget']};
             border-radius: {self.dimensions['border_radius']}px;
         }}
         

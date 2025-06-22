@@ -213,6 +213,7 @@ class MainWindow(QMainWindow):
     def create_dat_panel(self) -> QWidget:
         """Create the DAT games panel."""
         panel = QGroupBox("DAT Games")
+        panel.setObjectName("dat_panel")
         panel.setStyleSheet(self.theme.get_actions_group_style()) # Apply the style to the GroupBox
 
         layout = QVBoxLayout(panel)
@@ -252,6 +253,7 @@ class MainWindow(QMainWindow):
     def create_rom_panel(self) -> QWidget:
         """Create the user ROMs panel with tabs for current and missing ROMs."""
         panel = QGroupBox("User ROMs")
+        panel.setObjectName("rom_panel")
 
         layout = QVBoxLayout(panel)
         
@@ -467,6 +469,7 @@ class MainWindow(QMainWindow):
     def create_bottom_panel(self) -> QWidget:
         """Create the bottom panel with filters and actions."""
         panel = QWidget()
+        panel.setObjectName("bottom_panel")
         panel.setMaximumHeight(self.theme.dimensions['panel_maximum_height'])  # Limit height to prevent overlap
         layout = QHBoxLayout(panel)
         layout.setSpacing(10)
@@ -619,6 +622,7 @@ class MainWindow(QMainWindow):
         
         # Actions panel with premium styling
         actions_group = QGroupBox("Actions")
+        actions_group.setObjectName("actions_panel")
         actions_group.setStyleSheet(self.theme.get_actions_group_style())
         actions_layout = QVBoxLayout(actions_group)
 
