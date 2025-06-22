@@ -157,6 +157,7 @@ class MainWindow(QMainWindow):
         
         # Central widget
         central_widget = QWidget()
+        central_widget.setObjectName("centralWidget")
         self.setCentralWidget(central_widget)
         
         # Apply margins to the main window to create visible padding
@@ -472,6 +473,7 @@ class MainWindow(QMainWindow):
         panel = QWidget()
         panel.setObjectName("bottom_panel")
         panel.setMaximumHeight(self.theme.dimensions['panel_maximum_height'])  # Limit height to prevent overlap
+        panel.setStyleSheet("background-color: transparent !important;")
         layout = QHBoxLayout(panel)
         layout.setSpacing(10)
         
@@ -668,8 +670,10 @@ class MainWindow(QMainWindow):
         """Set up the menu bar."""
         # Create a custom menu bar container
         menu_container = QWidget()
+        menu_container.setObjectName("menu_container")
+        menu_container.setStyleSheet("background-color: transparent !important;")
         menu_layout = QVBoxLayout(menu_container)
-        menu_layout.setContentsMargins(0, 0, 0, 15)  # Add bottom margin for padding visibility
+        menu_layout.setContentsMargins(0, 0, 0, 0)  # Remove bottom margin
         menu_layout.setSpacing(0)
         
         # Create the actual menu bar
@@ -683,9 +687,9 @@ class MainWindow(QMainWindow):
         # Create custom two-column widget
         menu_columns_widget = QWidget()
         menu_columns_widget.setObjectName("menu_columns_widget")
-        menu_columns_widget.setStyleSheet(self.theme.get_menu_columns_widget_style())
+        menu_columns_widget.setStyleSheet(self.theme.get_menu_columns_widget_style() + "\nbackground-color: transparent !important;")
         menu_columns_layout = QHBoxLayout(menu_columns_widget)
-        menu_columns_layout.setContentsMargins(10, 5, 10, 5)
+        menu_columns_layout.setContentsMargins(10, 0, 10, 0)  # Remove vertical padding
         menu_columns_layout.setSpacing(0)
         
         # Left column - UK flag icon
@@ -786,7 +790,37 @@ class MainWindow(QMainWindow):
         self.progress_bar.setVisible(False)
         self.status_bar.addPermanentWidget(self.progress_bar)
         
-        self.status_bar.showMessage("Ready")
+        # Create a permanent label for "Ready" text to ensure it's always visible
+        self.status_label = QLabel("Ready")
+        self.status_bar.addPermanentWidget(self.status_label)
+        
+        # Still use showMessage for temporary messages
+        self.status_bar.showMessage("")
+        
+        # Timer to restore "Ready" message after temporary messages
+        self.status_timer = QTimer(self)
+        self.status_timer.setSingleShot(True)
+        self.status_timer.timeout.connect(self.restore_ready_status)
+    
+    def restore_ready_status(self):
+        """Restore the 'Ready' status message after temporary messages."""
+        self.status_bar.showMessage("")
+        self.status_label.setText("Ready")
+        self.status_label.setVisible(True)
+        
+    def showMessage(self, message, timeout=0):
+        """Override to handle temporary messages while keeping the Ready label visible."""
+        if message and message.strip():
+            # If there's a message, show it temporarily and hide the Ready label
+            self.status_bar.showMessage(message, timeout)
+            self.status_label.setVisible(False)
+            
+            # If timeout is specified, set timer to restore Ready status
+            if timeout > 0:
+                self.status_timer.start(timeout)
+        else:
+            # If no message, restore Ready status
+            self.restore_ready_status()
     
     def load_systems(self):
         """Load systems from database into combo box."""

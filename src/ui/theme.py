@@ -173,7 +173,7 @@ class Theme:
             'premium_button_padding': '10px 20px',
             'input_padding': '6px',
             'item_padding': '4px',
-            'menu_item_padding': '6px 10px',
+            'menu_item_padding': '6px 10px 6px 10px',
             'menu_item_full_padding': '6px 20px 6px 20px',
             'tab_padding': '8px 16px',
             'header_padding': '6px',
@@ -222,7 +222,7 @@ class Theme:
         }}
         
         /* Panel containers should be transparent */
-        QWidget#bottom_panel {{
+        QWidget#bottom_panel, QWidget#menu_container {{
             background-color: transparent;
         }}
         
@@ -233,11 +233,11 @@ class Theme:
         
         /* QSplitter styling */
         QSplitter {{
-            background-color: {self.colors['central_widget']};
+            background: transparent !important;
         }}
         
         QSplitter::handle {{
-            background-color: {self.colors['central_widget']};
+            background: transparent !important;
         }}
         
         /* Main window */
@@ -250,6 +250,11 @@ class Theme:
         QMainWindow > QWidget {{
             background-color: {self.colors['central_widget']};
             border-radius: {self.dimensions['border_radius']}px;
+        }}
+        
+        /* Override for specific widgets */
+        QMainWindow > QWidget#bottom_panel {{
+            background-color: transparent !important;
         }}
         
         /* Dialog windows */
@@ -267,6 +272,7 @@ class Theme:
             padding-right: 0px;
             padding-top: 0px;
             padding-bottom: 0px;
+            spacing: 0px; /* Remove gaps between menu items */
         }}
         
         QMenuBar::item {{
@@ -274,9 +280,15 @@ class Theme:
             padding: {self.layout['menu_item_padding']};
             margin: 0px;
             border: none;
+            margin-right: -1px; /* Remove gaps between menu items */
         }}
         
         QMenuBar::item:selected {{
+            background-color: {self.colors['highlight']};
+        }}
+        
+        QMenuBar::item:hover {{
+            /* Ensure hover doesn't affect other elements */
             background-color: {self.colors['highlight']};
         }}
         
@@ -287,6 +299,7 @@ class Theme:
         
         QMenu::item {{
             padding: {self.layout['menu_item_full_padding']};
+            background-color: {self.colors['medium_gray']};
         }}
         
         QMenu::item:selected {{
@@ -1386,10 +1399,11 @@ class Theme:
                 self.dimensions.get('settings_dialog_height', 500))
     
     def get_menu_columns_widget_style(self):
-        """Get style for menu columns widget with bottom padding."""
+        """Get style for menu columns widget with transparent background."""
         return f"""
             QWidget#menu_columns_widget {{
-                padding-bottom: 15px;
+                padding-bottom: 0px;
+                background-color: transparent !important;
             }}
         """
     
@@ -1504,7 +1518,7 @@ class Theme:
     def get_status_bar_style(self):
         """Get style for status bar."""
         return f"""
-            background: none;
+            background-color: {self.colors['background']};
             color: {self.colors['secondary_text']};
             border: none;
         """
