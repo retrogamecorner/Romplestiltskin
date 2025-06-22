@@ -48,6 +48,7 @@ class ROMStatus(Enum):
     MISSING = "missing"  # In DAT, not found locally
     DUPLICATE = "duplicate"  # Multiple files with same CRC
     MOVED_EXTRA = "moved_extra"  # Unrecognized file moved to an 'extra' folder
+    IGNORED = "ignored"  # User-marked as to be ignored
     MOVED_BROKEN = "moved_broken" # Broken file moved to a 'broken' folder
 
 @dataclass

@@ -44,6 +44,8 @@ from core.db_manager import DatabaseManager
 
 def main():
     """Main application entry point."""
+    print("Starting application...")
+    print("Creating QApplication...")
     app = QApplication(sys.argv)
     app.setApplicationName("Romplestiltskin")
     app.setApplicationVersion("1.0.0")
@@ -58,11 +60,18 @@ def main():
     app.setStyleSheet(theme.get_stylesheet())
     
     # Create main window
+    print("Creating MainWindow...")
     main_window = MainWindow(settings_manager, db_manager)
+    print("MainWindow created.")
     
+    print("Showing MainWindow...")
     main_window.show()
+    print("MainWindow shown.")
     
-    return app.exec()
+    print("Starting event loop...")
+    exit_code = app.exec()
+    print(f"Event loop finished with exit code: {exit_code}")
+    return exit_code
 
 if __name__ == "__main__":
     sys.exit(main())

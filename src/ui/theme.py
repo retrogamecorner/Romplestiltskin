@@ -267,7 +267,7 @@ class Theme:
         
         /* Dialog windows */
         QDialog {{
-            background-color: {self.colors['background']};
+            background-color: {self.colors['group_bg']};
              color: {self.colors['text']};
          }}
         
@@ -386,6 +386,15 @@ class Theme:
         QPushButton:pressed {{
             background-color: {self.colors['highlight']};
         }}
+
+        /* Buttons inside dialogs */
+        QDialog QPushButton {{
+            background-color: #1a1a1a;
+        }}
+
+        QDialog QPushButton:hover {{
+            background-color: #2c2c2c;
+        }}
         
         /* Premium action buttons */
         #premium_button {{
@@ -416,7 +425,7 @@ class Theme:
 
         QTreeWidget::item {{
             background-color: #3e3e3e;
-            border-bottom: 2px solid #4e4e4e;
+            border-bottom: none;
             padding-top: {self.spacing['small']}px;
             padding-bottom: {self.spacing['small']}px;
             padding-right: {self.spacing['small']}px;
@@ -590,27 +599,11 @@ class Theme:
         
         /* Tab widget */
         QTabWidget::pane {{
-            border: {self.dimensions['border_width']}px solid {self.colors['border']};
-            background-color: {self.colors['background']};
+            border: none;
+            background-color: transparent;
         }}
         
-        QTabBar::tab {{
-            background-color: {self.colors['medium_gray']};
-            color: {self.colors['text']};
-            padding: {self.layout['tab_padding']};
-            margin-right: {self.spacing['tiny']}px;
-            border-top-left-radius: {self.dimensions['border_radius']}px;
-            border-top-right-radius: {self.dimensions['border_radius']}px;
-        }}
-        
-        QTabBar::tab:selected {{
-            background-color: {self.colors['background']};
-            border-bottom: {self.dimensions['border_width_thick']}px solid {self.colors['highlight']};
-        }}
-        
-        QTabBar::tab:hover {{
-            background-color: {self.colors['light_gray']};
-        }}
+        /* Tab styling is handled entirely in main_window.py */
         
         /* Scroll bars */
         QScrollBar:vertical {{
@@ -1083,7 +1076,7 @@ class Theme:
                 background-color: {self.colors['group_bg']};
                 border: 1px solid {self.colors['border']};
                 border-radius: {self.dimensions['border']['radius']}px;
-                padding: 6px 6px 12px 6px; /* Adjusted to have 12px bottom padding */
+                padding: 6px 6px 6px 6px; /* Adjusted to have 12px bottom padding */
                 color: {self.colors['text']};
                 min-height: {self.dimensions['widget']['combo_min_height']}px;
             }}

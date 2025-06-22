@@ -61,6 +61,43 @@ class ScannedROMsManager:
             
             conn.commit()
 
+    def update_rom_status(self, system_id: int, new_status: ROMStatus, file_path: Optional[str] = None, crc32: Optional[str] = None):
+        """Update the status of a specific ROM file using file_path or crc32.
+
+        Args:
+            system_id: ID of the system
+            new_status: The new ROMStatus for the file
+            file_path: Path to the ROM file (optional)
+            crc32: CRC32 of the ROM file (optional)
+        """
+        print(f"update_rom_status: Called with system_id={system_id}, new_status={new_status}, file_path={file_path}, crc32={crc32}")
+        if not file_path and not crc32:
+            print("update_rom_status: Error - Either file_path or crc32 must be provided")
+            raise ValueError("Either file_path or crc32 must be provided")
+
+        with self.get_connection() as conn:
+            cursor = conn.cursor()
+            if file_path:
+                query = """
+                    UPDATE scanned_roms
+                    SET status = ?
+                    WHERE system_id = ? AND file_path = ?
+                """
+                print(f"update_rom_status: Executing query by file_path: {query} with params: ({new_status.value}, {system_id}, {file_path})")
+                cursor.execute(query, (new_status.value, system_id, file_path))
+                print(f"update_rom_status: Rows affected: {cursor.rowcount}")
+            elif crc32:
+                query = """
+                    UPDATE scanned_roms
+                    SET status = ?
+                    WHERE system_id = ? AND calculated_crc32 = ?
+                """
+                print(f"update_rom_status: Executing query by crc32: {query} with params: ({new_status.value}, {system_id}, {crc32})")
+                cursor.execute(query, (new_status.value, system_id, crc32))
+                print(f"update_rom_status: Rows affected: {cursor.rowcount}")
+            conn.commit()
+            print(f"update_rom_status: Changes committed to database")
+
     def update_rom_path(self, system_id: int, old_file_path: str, new_file_path: str):
         """Update the file path of a specific ROM file.
 
@@ -212,6 +249,86 @@ class ScannedROMsManager:
             
             return [dict(row) for row in cursor.fetchall()]
     
+    def get_rom_by_crc32(self, system_id: int, crc32: str) -> Optional[Dict[str, Any]]:
+        """Get a ROM by its CRC32 value for a specific system.
+        
+        Args:
+            system_id: ID of the system
+            crc32: CRC32 value of the ROM
+            
+        Returns:
+            ROM record or None if not found
+        """
+        print(f"get_rom_by_crc32: Looking for ROM with system_id={system_id}, crc32={crc32}")
+        with self.get_connection() as conn:
+            cursor = conn.cursor()
+            query = """
+                SELECT sr.*, g.major_name, g.region, g.languages, g.dat_rom_name
+                FROM scanned_roms sr
+                LEFT JOIN games g ON sr.matched_game_id = g.id
+                WHERE sr.system_id = ? AND sr.calculated_crc32 = ?
+            """
+            print(f"get_rom_by_crc32: Executing query: {query} with params: ({system_id}, {crc32})")
+            cursor.execute(query, (system_id, crc32))
+            
+            row = cursor.fetchone()
+            if row:
+                print(f"get_rom_by_crc32: Found ROM: {dict(row)}")
+                return dict(row)
+            else:
+                print(f"get_rom_by_crc32: No ROM found with system_id={system_id}, crc32={crc32}")
+                return None
+            
+    def insert_missing_rom(self, system_id: int, crc32: str, game_data: Optional[Dict[str, Any]] = None):
+        """Insert a missing ROM into the database.
+        
+        This method is used when a ROM is unignored but doesn't exist in the database yet,
+        which happens with missing ROMs that were previously ignored.
+        
+        Args:
+            system_id: ID of the system
+            crc32: CRC32 value of the ROM
+            game_data: Optional game data if available
+        """
+        print(f"insert_missing_rom: Called with system_id={system_id}, crc32={crc32}")
+        
+        # Check if the ROM already exists in the database
+        existing_rom = self.get_rom_by_crc32(system_id, crc32)
+        if existing_rom:
+            # If it exists, just update its status
+            print(f"insert_missing_rom: ROM already exists in database, updating status to MISSING")
+            self.update_rom_status(system_id, ROMStatus.MISSING, crc32=crc32)
+            return
+        
+        print(f"insert_missing_rom: ROM does not exist in database, inserting new record")
+            
+        # Get matched game ID if available
+        matched_game_id = None
+        if game_data and 'id' in game_data:
+            matched_game_id = game_data['id']
+            print(f"insert_missing_rom: Found matched game ID: {matched_game_id}")
+            
+        with self.get_connection() as conn:
+            cursor = conn.cursor()
+            cursor.execute("""
+                INSERT INTO scanned_roms (
+                    system_id, file_path, file_size, calculated_crc32, status,
+                    matched_game_id, similarity_score, error_message
+                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+            """, (
+                system_id,
+                "",  # Empty file_path for missing ROMs
+                0,   # Zero file_size for missing ROMs
+                crc32,
+                ROMStatus.MISSING.value,
+                matched_game_id,
+                None,  # No similarity score
+                None   # No error message
+            ))
+            
+            conn.commit()
+            print(f"insert_missing_rom: Successfully inserted ROM with crc32={crc32} into database with MISSING status")
+    
     def get_scan_summary(self, system_id: int) -> Dict[str, int]:
         """Get summary statistics for scanned ROMs.
         
@@ -256,20 +373,3 @@ class ScannedROMsManager:
                     summary['duplicate'] = count
             
             return summary
-
-    def update_rom_status(self, system_id: int, file_path: str, new_status: ROMStatus):
-        """Update the status of a specific ROM file.
-
-        Args:
-            system_id: ID of the system
-            file_path: Path to the ROM file
-            new_status: The new ROMStatus for the file
-        """
-        with self.get_connection() as conn:
-            cursor = conn.cursor()
-            cursor.execute("""
-                UPDATE scanned_roms
-                SET status = ?
-                WHERE system_id = ? AND file_path = ?
-            """, (new_status.value, system_id, file_path))
-            conn.commit()
