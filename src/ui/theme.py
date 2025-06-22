@@ -231,6 +231,15 @@ class Theme:
             background-color: {self.colors['central_widget']};
         }}
         
+        /* QSplitter styling */
+        QSplitter {{
+            background-color: {self.colors['central_widget']};
+        }}
+        
+        QSplitter::handle {{
+            background-color: {self.colors['central_widget']};
+        }}
+        
         /* Main window */
         QMainWindow {{
             background-color: {self.colors['main_window']};
@@ -285,12 +294,7 @@ class Theme:
             color: {self.colors['text']};
         }}
         
-        /* Status bar */
-        QStatusBar {{
-            background-color: {self.colors['dark_gray']};
-            color: {self.colors['secondary_text']};
-            border-top: {self.dimensions['border_width']}px solid {self.colors['border']};
-        }}
+        /* Status bar styling is now applied directly to the widget */
         
         /* Group boxes */
         QGroupBox {{
@@ -1487,3 +1491,20 @@ class Theme:
     def get_rom_stats_label_style(self):
         """Get style for ROM stats label."""
         return f"font-weight: {self.fonts['weight_bold']}; font-size: {self.fonts['size_small']}px; color: #909090; padding: {self.layout['stats_label_padding']}; background-color: #3e3e3e;"
+        
+    def configure_splitter(self, splitter):
+        """Configure a QSplitter with theme settings.
+        
+        Args:
+            splitter: The QSplitter widget to configure
+        """
+        # Set handle width programmatically as CSS width property doesn't work reliably
+        splitter.setHandleWidth(10)
+        
+    def get_status_bar_style(self):
+        """Get style for status bar."""
+        return f"""
+            background: none;
+            color: {self.colors['secondary_text']};
+            border: none;
+        """

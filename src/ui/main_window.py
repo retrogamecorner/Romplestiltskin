@@ -188,6 +188,7 @@ class MainWindow(QMainWindow):
         
         # Main content area
         content_splitter = QSplitter(Qt.Orientation.Horizontal)
+        self.theme.configure_splitter(content_splitter)  # Apply theme styling to splitter
         
         # Set central widget background using theme colors
 
@@ -777,6 +778,9 @@ class MainWindow(QMainWindow):
         """Set up the status bar."""
         self.status_bar = QStatusBar()
         self.setStatusBar(self.status_bar)
+        
+        # Apply status bar styling from theme
+        self.status_bar.setStyleSheet(self.theme.get_status_bar_style())
         
         self.progress_bar = QProgressBar()
         self.progress_bar.setVisible(False)
