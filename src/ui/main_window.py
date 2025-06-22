@@ -15,7 +15,7 @@ from PyQt6.QtWidgets import (
     QTreeWidget, QTreeWidgetItem, QTreeWidgetItemIterator, QComboBox, QLabel, QPushButton,
     QProgressBar, QStatusBar, QMenuBar, QMenu, QFileDialog,
     QMessageBox, QGroupBox, QCheckBox, QListWidget, QListWidgetItem,
-    QTabWidget, QTextEdit, QSpinBox, QLineEdit, QScrollArea, QApplication, QFrame
+    QTabWidget, QTextEdit, QSpinBox, QLineEdit, QScrollArea, QApplication, QFrame, QSizePolicy
 )
 from PyQt6.QtCore import Qt, QThread, pyqtSignal, QTimer, QByteArray
 from PyQt6.QtGui import QAction, QIcon, QColor, QFont
@@ -215,7 +215,8 @@ class MainWindow(QMainWindow):
         """Create the DAT games panel."""
         panel = QGroupBox("DAT Games")
         panel.setStyleSheet(self.theme.get_actions_group_style()) # Apply the style to the GroupBox
-        layout = QVBoxLayout(panel) # Set the layout directly on the panel
+
+        layout = QVBoxLayout(panel)
 
         # Add a QFrame as a horizontal line separator
         line_separator = QFrame()
@@ -231,13 +232,15 @@ class MainWindow(QMainWindow):
         ])
         self.dat_tree.setAlternatingRowColors(True)
         self.dat_tree.setSortingEnabled(True)
-        self.dat_tree.setMinimumHeight(self.theme.dimensions['dat_tree_minimum_height'])  # Reduced height
-        self.dat_tree.setMaximumHeight(self.theme.dimensions['dat_tree_maximum_height'])  # Prevent excessive growth
+        size_policy = QSizePolicy(QSizePolicy.Policy.Preferred, QSizePolicy.Policy.Expanding)
+        self.dat_tree.setSizePolicy(size_policy)
         # Make game name column wider (now at index 1)
         self.dat_tree.setColumnWidth(1, self.theme.layout['tree_name_column_width'])
         # Make # column narrower
         self.dat_tree.setColumnWidth(0, self.theme.layout['tree_index_column_width'])
         layout.addWidget(self.dat_tree)
+
+
         
         # Stats with detailed feedback
         self.dat_stats_label = QLabel("Total: 0 | Filtered Out: 0 | Showing: 0")
@@ -249,6 +252,7 @@ class MainWindow(QMainWindow):
     def create_rom_panel(self) -> QWidget:
         """Create the user ROMs panel with tabs for current and missing ROMs."""
         panel = QGroupBox("User ROMs")
+
         layout = QVBoxLayout(panel)
         
         # Create tab widget
