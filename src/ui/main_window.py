@@ -82,7 +82,7 @@ class DATImportThread(QThread):
                     successful_files += 1
             except Exception as e:
                 # Emit an error for this specific file, or collect errors
-                print(f"Error importing {file_path}: {e}") # Log or handle more gracefully
+                logging.error(f"Error importing {file_path}: {e}") # Log or handle more gracefully
                 # Optionally, emit a specific error signal per file or accumulate
         self.finished.emit(successful_files, total_files)
 
@@ -117,16 +117,16 @@ class MainWindow(QMainWindow):
     """Main application window."""
     
     def __init__(self, settings_manager: SettingsManager, db_manager: DatabaseManager):
-        print("Initializing MainWindow...")
+        logging.info("Initializing MainWindow...")
         super().__init__()
         
         self.settings_manager = settings_manager
         self.db_manager = db_manager
         self.dat_processor = DATProcessor(db_manager)
         self.rom_scanner = ROMScanner(db_manager, settings_manager.get_chunk_size_bytes())
-        print("Creating ScannedROMsManager...")
+        logging.info("Creating ScannedROMsManager...")
         self.scanned_roms_manager = ScannedROMsManager(settings_manager.get_database_path())
-        print("ScannedROMsManager created.")
+        logging.info("ScannedROMsManager created.")
         
         self.current_system_id = None
         self.current_scan_results = []
@@ -135,14 +135,14 @@ class MainWindow(QMainWindow):
         # Initialize theme
         self.theme = Theme()
         self.apply_theme()
-        print("Setting up UI...")
+        logging.info("Setting up UI...")
         self.setup_ui()
-        print("UI setup complete.")
+        logging.info("UI setup complete.")
         self.setup_menus()
         self.setup_status_bar()
-        print("Loading systems...")
+        logging.info("Loading systems...")
         self.load_systems()
-        print("Systems loaded.")
+        logging.info("Systems loaded.")
         self.restore_window_state()
         
     def apply_theme(self):
@@ -158,7 +158,7 @@ class MainWindow(QMainWindow):
         return self.qss
     
     def setup_ui(self):
-        print("  Setting up UI...")
+        logging.info("  Setting up UI...")
         """Set up the user interface."""
         self.setWindowTitle("Romplestiltskin - ROM Collection Manager")
         min_width, min_height = self.theme.get_main_window_minimum_size()
@@ -196,7 +196,7 @@ class MainWindow(QMainWindow):
 
         main_layout.addLayout(controls_layout)
         
-        print("    Creating content splitter...")
+        logging.info("    Creating content splitter...")
         # Main content area
         content_splitter = QSplitter(Qt.Orientation.Horizontal)
         self.theme.configure_splitter(content_splitter)  # Apply theme styling to splitter
@@ -204,33 +204,33 @@ class MainWindow(QMainWindow):
         # Set central widget background using theme colors
 
         
-        print("    Creating DAT panel...")
+        logging.info("    Creating DAT panel...")
         # Left panel - DAT games
         left_panel = self.create_dat_panel()
-        print("    DAT panel created.")
+        logging.info("    DAT panel created.")
         content_splitter.addWidget(left_panel)
         
-        print("    Creating ROM panel...")
+        logging.info("    Creating ROM panel...")
         # Right panel - ROMs
         right_panel = self.create_rom_panel()
-        print("    ROM panel created.")
-        print("    Adding ROM panel to splitter...")
+        logging.info("    ROM panel created.")
+        logging.info("    Adding ROM panel to splitter...")
         content_splitter.addWidget(right_panel)
-        print("    ROM panel added to splitter.")
+        logging.info("    ROM panel added to splitter.")
         
         # Set splitter proportions
-        print("    Setting splitter sizes...")
+        logging.info("    Setting splitter sizes...")
         content_splitter.setSizes([600, 600])
-        print("    Splitter sizes set.")
-        print("    Adding splitter to main layout...")
+        logging.info("    Splitter sizes set.")
+        logging.info("    Adding splitter to main layout...")
         main_layout.addWidget(content_splitter)
-        print("    Splitter added to main layout.")
-        print("  UI setup finished.")
+        logging.info("    Splitter added to main layout.")
+        logging.info("  UI setup finished.")
         
         # Bottom panel - Filters and actions
-        print("    Creating bottom panel...")
+        logging.info("    Creating bottom panel...")
         bottom_panel = self.create_bottom_panel()
-        print("    Bottom panel created.")
+        logging.info("    Bottom panel created.")
         main_layout.addWidget(bottom_panel)
         
         # Apply styling using theme colors
@@ -273,11 +273,11 @@ class MainWindow(QMainWindow):
         self.dat_stats_label.setStyleSheet(self.theme.get_dat_stats_label_style())
         layout.addWidget(self.dat_stats_label)
         
-        print("      ROM panel widget created.")
+        logging.info("      ROM panel widget created.")
         return panel
     
     def create_rom_panel(self) -> QWidget:
-        print("      Creating ROM panel widget...")
+        logging.info("      Creating ROM panel widget...")
         """Create the user ROMs panel with tabs for current and missing ROMs."""
         panel = QGroupBox("User ROMs")
         panel.setObjectName("rom_panel")
@@ -302,7 +302,7 @@ class MainWindow(QMainWindow):
         self.rom_tabs.setStyleSheet("background-color: transparent;")
         
         # Correct ROMs tab
-        print("      Creating correct ROMs tab...")
+        logging.info("      Creating correct ROMs tab...")
         correct_tab = QWidget()
         correct_layout = QVBoxLayout(correct_tab)
         correct_layout.setContentsMargins(0, 0, 0, 0)
@@ -322,9 +322,9 @@ class MainWindow(QMainWindow):
         self.correct_tree.setSelectionMode(QTreeWidget.SelectionMode.ExtendedSelection)  # Allow multiple selection
         correct_layout.addWidget(self.correct_tree)
         
-        print("      Correct ROMs tab created.")
+        logging.info("      Correct ROMs tab created.")
         # Missing ROMs tab
-        print("      Creating missing ROMs tab...")
+        logging.info("      Creating missing ROMs tab...")
         missing_tab = QWidget()
         missing_layout = QVBoxLayout(missing_tab)
         missing_layout.setContentsMargins(0, 0, 0, 0)
@@ -346,9 +346,9 @@ class MainWindow(QMainWindow):
         self.missing_tree.customContextMenuRequested.connect(self.show_missing_tree_context_menu)
         missing_layout.addWidget(self.missing_tree)
         
-        print("      Missing ROMs tab created.")
+        logging.info("      Missing ROMs tab created.")
         # Unrecognized ROMs tab
-        print("      Creating unrecognized ROMs tab...")
+        logging.info("      Creating unrecognized ROMs tab...")
         unrecognized_tab = QWidget()
         unrecognized_layout = QVBoxLayout(unrecognized_tab)
         unrecognized_layout.setContentsMargins(0, 0, 0, 0)
@@ -370,9 +370,9 @@ class MainWindow(QMainWindow):
         self.unrecognized_tree.customContextMenuRequested.connect(self.show_unrecognized_tree_context_menu)
         unrecognized_layout.addWidget(self.unrecognized_tree)
         
-        print("      Unrecognized ROMs tab created.")
+        logging.info("      Unrecognized ROMs tab created.")
         # Broken ROMs tab
-        print("      Creating broken ROMs tab...")
+        logging.info("      Creating broken ROMs tab...")
         broken_tab = QWidget()
         broken_layout = QVBoxLayout(broken_tab)
         broken_layout.setContentsMargins(0, 0, 0, 0)
@@ -392,9 +392,9 @@ class MainWindow(QMainWindow):
         self.broken_tree.setSelectionMode(QTreeWidget.SelectionMode.ExtendedSelection)
         broken_layout.addWidget(self.broken_tree)
 
-        print("      Broken ROMs tab created.")
+        logging.info("      Broken ROMs tab created.")
         # Ignored ROMs tab
-        print("      Creating ignored ROMs tab...")
+        logging.info("      Creating ignored ROMs tab...")
         ignored_tab = QWidget()
         ignored_layout = QVBoxLayout(ignored_tab)
         ignored_layout.setContentsMargins(0, 0, 0, 0)
@@ -432,7 +432,7 @@ class MainWindow(QMainWindow):
         unrecognized_icon = qta.icon(tab_colors['unrecognized']['icon'], color=tab_colors['unrecognized']['color'], scale_factor=0.7)
         broken_icon = qta.icon(tab_colors['broken']['icon'], color=tab_colors['broken']['color'], scale_factor=0.7)
         
-        print("      Ignored ROMs tab created.")
+        logging.info("      Ignored ROMs tab created.")
         # Add tabs with icons
         self.rom_tabs.addTab(correct_tab, correct_icon, "Correct")
         self.rom_tabs.addTab(missing_tab, missing_icon, "Missing")
@@ -543,7 +543,7 @@ class MainWindow(QMainWindow):
                     crc32 = item.text(2) if item.columnCount() > 2 else None  # CRC32 is in the third column
                     
                     # Debug print to check values
-                    print(f"Moving unrecognized ROM to ignored: {file_path}, CRC32: {crc32}")
+                    logging.info(f"Moving unrecognized ROM to ignored: {file_path}, CRC32: {crc32}")
                 else:
                     # For other statuses, use the default column structure
                     file_path = item.text(1)  # Assuming file path is in the second column
@@ -556,7 +556,7 @@ class MainWindow(QMainWindow):
                     file_path=file_path,
                     crc32=crc32
                 )
-                print(f"Updated ROM status to IGNORED for {file_path} with CRC32: {crc32}")
+                logging.info(f"Updated ROM status to IGNORED for {file_path} with CRC32: {crc32}")
                 
                 # Add to in-memory ignored_crcs set if we have the CRC32
                 if crc32:
@@ -2347,42 +2347,42 @@ class MainWindow(QMainWindow):
         renamed_count = 0
         failed_renames = []
         
-        print(f"DEBUG: Found {len(wrong_filename_roms)} ROMs with wrong filenames")
+        logging.debug(f"Found {len(wrong_filename_roms)} ROMs with wrong filenames")
         
         for i, rom_data in enumerate(wrong_filename_roms):
-            print(f"DEBUG: Processing ROM {i+1}/{len(wrong_filename_roms)}: {rom_data}")
+            logging.debug(f"Processing ROM {i+1}/{len(wrong_filename_roms)}: {rom_data}")
             try:
                 old_path = Path(rom_data['file_path'])
-                print(f"DEBUG: Checking if file exists: {old_path}")
+                logging.debug(f"Checking if file exists: {old_path}")
                 if not old_path.exists():
                     failed_renames.append(f"{old_path.name}: File not found")
-                    print(f"DEBUG: File not found: {old_path}")
+                    logging.debug(f"File not found: {old_path}")
                     continue
                 
                 # Get the correct filename from the matched game
-                print(f"DEBUG: Available keys in rom_data: {list(rom_data.keys())}")
-                print(f"DEBUG: calculated_crc32 value: {rom_data.get('calculated_crc32')}")
-                print(f"DEBUG: calculated_crc32 type: {type(rom_data.get('calculated_crc32'))}")
+                logging.debug(f"Available keys in rom_data: {list(rom_data.keys())}")
+                logging.debug(f"calculated_crc32 value: {rom_data.get('calculated_crc32')}")
+                logging.debug(f"calculated_crc32 type: {type(rom_data.get('calculated_crc32'))}")
                 
                 matched_crc32 = rom_data.get('calculated_crc32')
-                print(f"DEBUG: Matched CRC32: {matched_crc32}")
+                logging.debug(f"Matched CRC32: {matched_crc32}")
                 if not matched_crc32:
                     failed_renames.append(f"{old_path.name}: No matched game found")
-                    print(f"DEBUG: No matched CRC32 found")
+                    logging.debug(f"No matched CRC32 found")
                     continue
                 
                 # Get game details from database
-                print(f"DEBUG: Getting game details for CRC32: {matched_crc32}, size: {old_path.stat().st_size}")
+                logging.debug(f"Getting game details for CRC32: {matched_crc32}, size: {old_path.stat().st_size}")
                 game_details = self.db_manager.get_game_by_crc(current_system_id, matched_crc32, old_path.stat().st_size)
-                print(f"DEBUG: Game details: {game_details}")
+                logging.debug(f"Game details: {game_details}")
                 if not game_details:
                     failed_renames.append(f"{old_path.name}: Game details not found in DAT")
-                    print(f"DEBUG: Game details not found in database")
+                    logging.debug(f"Game details not found in database")
                     continue
                 
                 # Construct new filename using the DAT ROM name (which includes region info)
                 dat_rom_name = game_details.get('dat_rom_name', game_details['major_name'])
-                print(f"DEBUG: DAT ROM name: {dat_rom_name}")
+                logging.debug(f"DAT ROM name: {dat_rom_name}")
                 
                 # Remove the extension from dat_rom_name if it exists, we'll use the original file's extension
                 if '.' in dat_rom_name:
@@ -2390,54 +2390,54 @@ class MainWindow(QMainWindow):
                 else:
                     correct_name = dat_rom_name
                     
-                print(f"DEBUG: Correct name without extension: {correct_name}")
+                logging.debug(f"Correct name without extension: {correct_name}")
                 # Sanitize filename for Windows (remove invalid characters)
                 invalid_chars = '<>:"/\\|?*'
                 for char in invalid_chars:
                     correct_name = correct_name.replace(char, '_')
-                print(f"DEBUG: Sanitized correct name: {correct_name}")
+                logging.debug(f"Sanitized correct name: {correct_name}")
                 
                 # Keep the original file extension
                 new_filename = f"{correct_name}{old_path.suffix}"
                 new_path = old_path.parent / new_filename
                 
-                print(f"DEBUG: Attempting to rename '{old_path.name}' to '{new_filename}'")
-                print(f"DEBUG: Full paths - Old: {old_path}, New: {new_path}")
+                logging.debug(f"Attempting to rename '{old_path.name}' to '{new_filename}'")
+                logging.debug(f"Full paths - Old: {old_path}, New: {new_path}")
                 
                 # Check if target file already exists
                 if new_path.exists() and new_path != old_path:
                     failed_renames.append(f"{old_path.name}: Target file already exists ({new_filename})")
-                    print(f"DEBUG: Target file already exists: {new_path}")
+                    logging.debug(f"Target file already exists: {new_path}")
                     continue
                 
                 # Rename the file
-                print(f"DEBUG: Executing rename from {old_path} to {new_path}")
+                logging.debug(f"Executing rename from {old_path} to {new_path}")
                 old_path.rename(new_path)
-                print(f"DEBUG: File rename successful")
+                logging.debug(f"File rename successful")
                 
                 # Update database with new path and status
                 if hasattr(self, 'scanned_roms_manager'):
-                    print(f"DEBUG: Updating database - old path: {str(old_path)}, new path: {str(new_path)}")
+                    logging.debug(f"Updating database - old path: {str(old_path)}, new path: {str(new_path)}")
                     self.scanned_roms_manager.update_rom_path(
                         current_system_id, str(old_path), str(new_path)
                     )
-                    print(f"DEBUG: Database path updated")
+                    logging.debug(f"Database path updated")
                     self.scanned_roms_manager.update_rom_status(
                         current_system_id, str(new_path), ROMStatus.CORRECT
                     )
-                    print(f"DEBUG: Database status updated to CORRECT")
+                    logging.debug(f"Database status updated to CORRECT")
                 else:
-                    print(f"DEBUG: No scanned_roms_manager available")
+                    logging.debug(f"No scanned_roms_manager available")
                 
                 renamed_count += 1
-                print(f"DEBUG: Successfully renamed file {i+1}")
+                logging.debug(f"Successfully renamed file {i+1}")
                 
             except Exception as e:
                 error_msg = f"{Path(rom_data['file_path']).name}: {str(e)}"
                 failed_renames.append(error_msg)
-                print(f"DEBUG: Exception occurred: {error_msg}")
+                logging.debug(f"Exception occurred: {error_msg}")
                 import traceback
-                print(f"DEBUG: Full traceback: {traceback.format_exc()}")
+                logging.debug(f"Full traceback: {traceback.format_exc()}")
         
         # Show results
         message = f"Successfully renamed {renamed_count} file(s)."
@@ -2546,7 +2546,7 @@ class MainWindow(QMainWindow):
             if not source_path.exists():
                 error_msg = f"{source_path.name} (File not found at: {source_path})"
                 failed_moves_details.append(error_msg)
-                print(f"Error moving file: {error_msg}")
+                logging.error(f"Error moving file: {error_msg}")
                 continue
             
             # Determine which ROM folder this file belongs to and create target dir
@@ -2594,15 +2594,15 @@ class MainWindow(QMainWindow):
         summary_message = f"Moved {moved_files_count} unrecognized file(s) to '{extra_folder_name}' subfolder(s)."
         if failed_moves_details:
             summary_message += "\n\nFailed to move some files:\n" + "\n".join(failed_moves_details)
-            print("Move Complete with Errors:")
-            print(summary_message) # Log the full error summary to terminal
+            logging.warning("Move Complete with Errors:")
+            logging.warning(summary_message)
             QMessageBox.warning(self, "Move Complete with Errors", summary_message)
         else:
             QMessageBox.information(self, "Move Complete", summary_message)
         
         # After moving, rescan the system to update the lists and database
         if self.current_system_id:
-            print(f"Rescanning system {self.current_system_id} after moving extra files.")
+            logging.info(f"Rescanning system {self.current_system_id} after moving extra files.")
             self.scan_rom_folder(prompt_for_folder=False)
         
         # self.update_rom_stats() # Refresh the displayed stats - This is now handled by on_scan_finished
@@ -2716,7 +2716,7 @@ class MainWindow(QMainWindow):
                 broken_folder = rom_folder / broken_folder_name
                 try:
                     broken_folder.mkdir(exist_ok=True)
-                    print(f"Created/verified broken folder: {broken_folder}")
+                    logging.info(f"Created/verified broken folder: {broken_folder}")
                 except Exception as e:
                     failed_moves.append(f"{source_path.name} (failed to create broken folder: {e})")
                     continue
@@ -2734,10 +2734,10 @@ class MainWindow(QMainWindow):
                     counter += 1
                 
                 try:
-                    print(f"Moving file from {source_path} to {dest_path}")
+                    logging.info(f"Moving file from {source_path} to {dest_path}")
                     source_path.rename(dest_path)
                     moved_files.append(source_path.name)
-                    print(f"Successfully moved: {source_path.name}")
+                    logging.info(f"Successfully moved: {source_path.name}")
                 except Exception as e:
                     failed_moves.append(f"{source_path.name} (failed to move: {e})")
                     continue

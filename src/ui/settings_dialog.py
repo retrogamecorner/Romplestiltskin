@@ -10,6 +10,7 @@ import shutil
 from pathlib import Path
 from typing import Dict, Any
 
+import logging
 from PyQt6.QtWidgets import (
     QDialog, QVBoxLayout, QHBoxLayout, QTabWidget, QWidget,
     QGroupBox, QLabel, QLineEdit, QPushButton, QSpinBox,
@@ -665,7 +666,7 @@ class SettingsDialog(QDialog):
                 for system in systems:
                     self.system_combo.addItem(system['system_name'], system['id'])
             except Exception as e:
-                print(f"Error loading systems: {e}")
+                logging.error(f"Error loading systems: {e}")
     
     def reset_entire_program(self):
         """Reset the entire program - database, settings, and cache."""
