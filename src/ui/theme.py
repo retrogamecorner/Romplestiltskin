@@ -16,9 +16,9 @@ class Theme:
             'dark_gray': '#0f0f0f',
             'medium_gray': '#2a2a2a',
             'light_gray': '#3a3a3a',
-            'highlight': '#4a9eff',
-            'highlight_hover': '#3a8eef',
-            'highlight_pressed': '#2a7edf',
+            'highlight': '#4a4a4a',
+            'highlight_hover': '#4a4a4a',
+            'highlight_pressed': '#4a4a4a',
             'primary': '#4a9eff',  # Same as highlight
             'secondary': '#757575',
             'secondary_hover': '#616161',
@@ -210,6 +210,10 @@ class Theme:
         """Get the complete application stylesheet."""
         return f"""
         /* Global styles */
+        QCheckBox, QLabel {{
+            background: transparent;
+        }}
+
         QWidget {{
             background-color: {self.colors['background']};
             color: {self.colors['text']};
@@ -290,6 +294,10 @@ class Theme:
         }}
         
         /* Filter group boxes with enhanced styling */
+        QGroupBox[objectName="filter_group"] QCheckBox, QGroupBox[objectName="filter_group"] QLabel {{
+            background-color: transparent;
+        }}
+
         QGroupBox[objectName="filter_group"] {{
             background: {self.colors['group_bg']}; /* Ensure this is #3e3e3e */
             border: {self.dimensions['border_width_thick']}px solid #484848;
@@ -398,6 +406,61 @@ class Theme:
             padding: {self.layout['input_padding']};
             min-height: {self.dimensions['combo_min_height']}px;
             color: {self.colors['text']};
+        }}
+
+        /* Scrollbar styles from QDarkStyleSheet */
+
+        QScrollBar:horizontal {{
+            height: 16px;
+            margin: 2px 16px 2px 16px;
+            border: 1px solid #3e3e3e;
+            border-radius: 4px;
+            background-color: transparent !important;
+        }}
+
+        QScrollBar:vertical {{
+            background-color: transparent !important;
+            width: 16px;
+            margin: 16px 2px 16px 2px;
+            border: 1px solid #3e3e3e;
+            border-radius: 4px;
+        }}
+
+        QScrollBar::handle:horizontal {{
+            background-color: #484848;
+            border: 1px solid #484848;
+            border-radius: 4px;
+            min-width: 8px;
+        }}
+
+        QScrollBar::handle:horizontal:hover {{
+            background-color: #919191;
+            border: 1px solid #919191;
+            border-radius: 4px;
+            min-width: 8px;
+        }}
+
+        QScrollBar::handle:vertical {{
+            background-color: #484848;
+            border: 1px solid #484848;
+            border-radius: 4px;
+            min-height: 8px;
+        }}
+
+        QScrollBar::handle:vertical:hover {{
+            background-color: #919191;
+            border: 1px solid #919191;
+            border-radius: 4px;
+            min-height: 8px;
+        }}
+
+        QScrollBar::add-line, QScrollBar::sub-line {{
+            height: 0;
+            width: 0;
+        }}
+
+        QScrollBar::add-page, QScrollBar::sub-page {{
+            background: none;
         }}
         
         QComboBox::drop-down {{

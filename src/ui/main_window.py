@@ -190,7 +190,7 @@ class MainWindow(QMainWindow):
         content_splitter = QSplitter(Qt.Orientation.Horizontal)
         
         # Set central widget background using theme colors
-        central_widget.setStyleSheet(f"QWidget {{ background-color: {self.theme.colors['central_widget']}; }}")
+
         
         # Left panel - DAT games
         left_panel = self.create_dat_panel()
@@ -209,7 +209,6 @@ class MainWindow(QMainWindow):
         main_layout.addWidget(bottom_panel)
         
         # Apply styling using theme colors
-        bottom_panel.setStyleSheet("QWidget { background-color: transparent; }")
     
     def create_dat_panel(self) -> QWidget:
         """Create the DAT games panel."""
@@ -475,7 +474,7 @@ class MainWindow(QMainWindow):
         # Filter panel with improved styling
         filter_group = QGroupBox("Filters")
         filter_group.setObjectName("filter_group")
-        filter_group.setStyleSheet(self.theme.get_actions_group_style()) # Apply the same style as actions_group
+
         
         # Vertical layout for the entire filter_group (title, line, content)
         filter_group_main_layout = QVBoxLayout(filter_group)
@@ -544,9 +543,13 @@ class MainWindow(QMainWindow):
         filter_row1 = QHBoxLayout()
         filter_row1.setSpacing(10)
         self.show_beta_cb = QCheckBox("Beta")
+        self.show_beta_cb.setAutoFillBackground(False)
         self.show_demo_cb = QCheckBox("Demo")
+        self.show_demo_cb.setAutoFillBackground(False)
         self.show_proto_cb = QCheckBox("Proto")
+        self.show_proto_cb.setAutoFillBackground(False)
         self.show_unlicensed_cb = QCheckBox("Unlicensed")
+        self.show_unlicensed_cb.setAutoFillBackground(False)
         
         # Set all checkboxes to checked by default
         self.show_beta_cb.setChecked(True)
@@ -569,8 +572,11 @@ class MainWindow(QMainWindow):
         filter_row2 = QHBoxLayout()
         filter_row2.setSpacing(10)
         self.show_translation_cb = QCheckBox("Translations")
+        self.show_translation_cb.setAutoFillBackground(False)
         self.show_modified_cb = QCheckBox("Modified")
+        self.show_modified_cb.setAutoFillBackground(False)
         self.show_overdump_cb = QCheckBox("Overdumps")
+        self.show_overdump_cb.setAutoFillBackground(False)
         
         # Set all checkboxes to checked by default
         self.show_translation_cb.setChecked(True)
