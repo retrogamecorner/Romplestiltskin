@@ -354,30 +354,36 @@ class Theme:
         
         /* Tree widgets */
         QTreeWidget {{
-            background-color: {self.colors['dark_gray']};
-            alternate-background-color: {self.colors['medium_gray']};
-            border: {self.dimensions['border_width']}px solid {self.colors['border']};
-            border-radius: {self.dimensions['border_radius']}px;
+            background-color: #3e3e3e;
+            border: none;
             color: {self.colors['text']};
         }}
-        
+
+        QTreeWidget::item:alternate {{
+            background-color: #3e3e3e;
+        }}
+
         QTreeWidget::item {{
+            background-color: #3e3e3e;
+            border-bottom: 2px solid #4e4e4e;
             padding: {self.spacing['small']}px;
             min-height: {self.dimensions['list_item_height']}px;
         }}
-        
+
+        QTreeWidget::item:hover {{
+            background-color: #4a4a4a;
+        }}
+
         QTreeWidget::item:selected {{
             background-color: {self.colors['highlight']};
             color: {self.colors['text']};
         }}
-        
+
         QHeaderView::section {{
-            background-color: {self.colors['medium_gray']};
+            background-color: #2c2c2c;
             color: {self.colors['text']};
             padding: {self.layout['header_padding']};
             border: none;
-            border-right: {self.dimensions['border_width']}px solid {self.colors['border']};
-            border-bottom: {self.dimensions['border_width']}px solid {self.colors['border']};
             min-height: {self.dimensions['tree_header_height']}px;
         }}
         
