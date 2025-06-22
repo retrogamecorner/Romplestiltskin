@@ -1269,10 +1269,8 @@ class Theme:
                 padding: 30px 0px 10px 0px; /* Increased top padding to 40px */
             }}
             QGroupBox::title {{
-                subcontrol-origin: padding; /* Changed from margin to padding */
-                subcontrol-position: top left;
-                left: {self.spacing['small']}px; /* Adjusted left padding */
-                padding: 10px {self.spacing['small']}px 0px {self.spacing['small']}px; 
+                top:25px;  
+                left:5px;           
             }}
             QFrame#horizontalLine {{
                 min-height: 2px;
