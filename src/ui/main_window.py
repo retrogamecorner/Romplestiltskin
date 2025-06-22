@@ -166,8 +166,8 @@ class MainWindow(QMainWindow):
         
         # Main layout with internal padding
         main_layout = QVBoxLayout(central_widget)
-        main_layout.setContentsMargins(margins, margins, margins, margins)
-        
+        main_layout.setContentsMargins(margins, 12, margins, margins)
+
         # Top controls
         controls_layout = QHBoxLayout()
         
@@ -671,9 +671,9 @@ class MainWindow(QMainWindow):
         # Create a custom menu bar container
         menu_container = QWidget()
         menu_container.setObjectName("menu_container")
-        menu_container.setStyleSheet("background-color: transparent !important;")
+
         menu_layout = QVBoxLayout(menu_container)
-        menu_layout.setContentsMargins(0, 0, 0, 0)  # Remove bottom margin
+        menu_layout.setContentsMargins(0, 0, 0, 30)  # Add bottom margin of 30px
         menu_layout.setSpacing(0)
         
         # Create the actual menu bar

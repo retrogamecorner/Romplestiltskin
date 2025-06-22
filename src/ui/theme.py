@@ -164,6 +164,7 @@ class Theme:
         self.layout = {
             'window_padding': '1%',
             'main_window_margins': 15,
+            'central_widget_margin_top': 30,
             'dialog_margin': 10,
             'group_margin_top': 12,
             'filter_group_margin_top': 10,
@@ -174,7 +175,7 @@ class Theme:
             'input_padding': '6px',
             'item_padding': '4px',
             'menu_item_padding': '6px 10px 6px 10px',
-            'menu_item_full_padding': '6px 20px 6px 20px',
+            'menu_item_full_padding': '5px 12px 5px 12px',
             'tab_padding': '8px 16px',
             'header_padding': '6px',
             # Column widths for tree widgets
@@ -222,7 +223,11 @@ class Theme:
         }}
         
         /* Panel containers should be transparent */
-        QWidget#bottom_panel, QWidget#menu_container {{
+        QWidget#bottom_panel {{
+            background-color: transparent;
+        }}
+        
+        QWidget#menu_container {{
             background-color: transparent;
         }}
         
@@ -233,7 +238,8 @@ class Theme:
         
         /* QSplitter styling */
         QSplitter {{
-            background: transparent !important;
+            background-color: transparent;
+            margin-top: 0px;
         }}
         
         QSplitter::handle {{
@@ -246,8 +252,10 @@ class Theme:
             border: 2px solid {self.colors['border']};
         }}
         
+
+        
         /* Central widget to show padding */
-        QMainWindow > QWidget {{
+        QMainWindow > QWidget#centralWidget {{
             background-color: {self.colors['central_widget']};
             border-radius: {self.dimensions['border_radius']}px;
         }}
@@ -260,8 +268,8 @@ class Theme:
         /* Dialog windows */
         QDialog {{
             background-color: {self.colors['background']};
-            color: {self.colors['text']};
-        }}
+             color: {self.colors['text']};
+         }}
         
         /* Menu bar */
         QMenuBar {{
@@ -293,18 +301,35 @@ class Theme:
         }}
         
         QMenu {{
-            background-color: {self.colors['medium_gray']};
+            background-color: {self.colors['central_widget']};
             border: {self.dimensions['border_width']}px solid {self.colors['border']};
+            margin: 0px;
+            padding: 0px;
+            spacing: 0px;
         }}
-        
+
         QMenu::item {{
-            padding: {self.layout['menu_item_full_padding']};
-            background-color: {self.colors['medium_gray']};
+            padding: 8px 10px 8px 10px;
+            background-color: {self.colors['central_widget']};
+            margin: 0px;
+            border: none;
         }}
-        
+
         QMenu::item:selected {{
             background-color: {self.colors['highlight']};
             color: {self.colors['text']};
+        }}
+        
+        QMenu::right-arrow {{
+            width: 15px;
+            height: 15px;
+            margin-right: 2px;
+        }}
+        
+        QMenu::separator {{
+            height: 1px;
+            background-color: {self.colors['border']};
+            margin: 2px 5px 2px 5px;
         }}
         
         /* Status bar styling is now applied directly to the widget */
@@ -1058,7 +1083,7 @@ class Theme:
                 background-color: {self.colors['group_bg']};
                 border: 1px solid {self.colors['border']};
                 border-radius: {self.dimensions['border']['radius']}px;
-                padding: {self.layout['input_padding']};
+                padding: 6px 6px 12px 6px; /* Adjusted to have 12px bottom padding */
                 color: {self.colors['text']};
                 min-height: {self.dimensions['widget']['combo_min_height']}px;
             }}
