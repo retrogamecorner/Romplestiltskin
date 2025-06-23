@@ -362,4 +362,57 @@ class DATProcessor:
                 else:
                     return version
         
-        return 0  # Base version
+        return 0  # Base version    
+    def import_dat_file(self, dat_file_path: str) -> bool:
+        """Import a DAT file into the database.
+        
+        Args:
+            dat_file_path: Path to the DAT file
+            
+        Returns:
+            True if import was successful, False otherwise
+        """
+        try:
+            # Parse the DAT file
+            dat_data = self.parse_dat_file(dat_file_path)
+            if not dat_data:
+                return False
+            
+            # Add or update system
+            system_id = self.db_manager.add_system(
+                dat_data['system_name'],
+                dat_data['dat_file_path']
+            )
+            
+            # Clear existing games for this system
+            self.db_manager.clear_system_games(system_id)
+            
+            # Add games
+            for game_data in dat_data['games']:
+                game_data['system_id'] = system_id
+                self.db_manager.add_game(game_data)
+            
+            print(f"Successfully imported {len(dat_data['games'])} games from {dat_data['system_name']}")
+            return True
+            
+        except Exception as e:
+            print(f"Error importing DAT file {dat_file_path}: {e}")
+            return False
+    
+    def import_dat_folder(self, dat_folder: str) -> Tuple[int, int]:
+        """Import all DAT files from a folder.
+        
+        Args:
+            dat_folder: Path to folder containing DAT files
+            
+        Returns:
+            Tuple of (successful_imports, total_files)
+        """
+        dat_files = self.scan_dat_folder(dat_folder)
+        successful = 0
+        
+        for dat_file in dat_files:
+            if self.import_dat_file(dat_file):
+                successful += 1
+        
+        return successful, len(dat_files)

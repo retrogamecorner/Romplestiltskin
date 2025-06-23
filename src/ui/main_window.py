@@ -530,15 +530,9 @@ class MainWindow(QMainWindow):
                 # Add to in-memory ignored_crcs set
                 if crc32:
                     self.ignored_crcs.add(crc32)
-                    # Update the settings manager with the new ignored CRC
-                    current_ignored = self.settings_manager.get_ignored_crcs(self.current_system_id)
-                    if crc32 not in current_ignored:
-                        current_ignored.append(crc32)
-                        self.settings_manager.set_ignored_crcs(current_ignored, self.current_system_id)
-                # Add item to removal list
-                items_to_remove.append(item)
-            else:
-                # Handle different column structures based on the original status
+                file_path = item.text(1)  # Assuming file path is in the second column
+                # Get the CRC32 for this file if available
+                crc32 = item.text(4) if item.columnCount() > 4 else None
                 if original_status == ROMStatus.NOT_RECOGNIZED:
                     # For unrecognised ROMs, get the full path from UserRole
                     file_path = item.data(1, Qt.ItemDataRole.UserRole)

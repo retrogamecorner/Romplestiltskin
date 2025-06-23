@@ -108,7 +108,7 @@ class SettingsManager:
             return system_filters[str(system_id)]
         else:
             # Return default filter settings if no system-specific settings exist
-            return self.settings.get("filter_settings", {}).copy()
+            return self.settings
 
     def get_ignored_crcs(self, system_id: Optional[str] = None) -> list:
         """Get the list of ignored CRCs, optionally for a specific system."""
@@ -126,7 +126,7 @@ class SettingsManager:
 
     def set_ignored_crcs(self, crc_list: list, system_id: Optional[str] = None) -> None:
         """Set the list of ignored CRCs, optionally for a specific system."""
-        logging.debug(f"set_ignored_crcs: Called with system_id={system_id}, crc_list={crc_list}")
+        self.save_settings()  # Save settings after modification.get("filter_settings", {}).copy()
         if system_id:
             logging.debug(f"set_ignored_crcs: Setting system-specific ignores for {system_id}")
             self.set(f"system_ignored_crcs.{system_id}", crc_list)
