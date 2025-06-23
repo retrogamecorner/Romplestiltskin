@@ -7,7 +7,6 @@ Provides the primary user interface for ROM collection management.
 
 import os
 import shutil
-import logging
 from pathlib import Path
 from typing import Dict, Any, List, Optional
 
@@ -82,7 +81,7 @@ class DATImportThread(QThread):
                     successful_files += 1
             except Exception as e:
                 # Emit an error for this specific file, or collect errors
-                logging.error(f"Error importing {file_path}: {e}") # Log or handle more gracefully
+                print(f"Error importing {file_path}: {e}") # Log or handle more gracefully
                 # Optionally, emit a specific error signal per file or accumulate
         self.finished.emit(successful_files, total_files)
 
@@ -117,16 +116,16 @@ class MainWindow(QMainWindow):
     """Main application window."""
     
     def __init__(self, settings_manager: SettingsManager, db_manager: DatabaseManager):
-        logging.info("Initializing MainWindow...")
+        print("Initializing MainWindow...")
         super().__init__()
         
         self.settings_manager = settings_manager
         self.db_manager = db_manager
         self.dat_processor = DATProcessor(db_manager)
         self.rom_scanner = ROMScanner(db_manager, settings_manager.get_chunk_size_bytes())
-        logging.info("Creating ScannedROMsManager...")
+        print("Creating ScannedROMsManager...")
         self.scanned_roms_manager = ScannedROMsManager(settings_manager.get_database_path())
-        logging.info("ScannedROMsManager created.")
+        print("ScannedROMsManager created.")
         
         self.current_system_id = None
         self.current_scan_results = []
@@ -135,14 +134,14 @@ class MainWindow(QMainWindow):
         # Initialize theme
         self.theme = Theme()
         self.apply_theme()
-        logging.info("Setting up UI...")
+        print("Setting up UI...")
         self.setup_ui()
-        logging.info("UI setup complete.")
+        print("UI setup complete.")
         self.setup_menus()
         self.setup_status_bar()
-        logging.info("Loading systems...")
+        print("Loading systems...")
         self.load_systems()
-        logging.info("Systems loaded.")
+        print("Systems loaded.")
         self.restore_window_state()
         
     def apply_theme(self):
@@ -158,7 +157,7 @@ class MainWindow(QMainWindow):
         return self.qss
     
     def setup_ui(self):
-        logging.info("  Setting up UI...")
+        print("  Setting up UI...")
         """Set up the user interface."""
         self.setWindowTitle("Romplestiltskin - ROM Collection Manager")
         min_width, min_height = self.theme.get_main_window_minimum_size()
@@ -196,7 +195,7 @@ class MainWindow(QMainWindow):
 
         main_layout.addLayout(controls_layout)
         
-        logging.info("    Creating content splitter...")
+        print("    Creating content splitter...")
         # Main content area
         content_splitter = QSplitter(Qt.Orientation.Horizontal)
         self.theme.configure_splitter(content_splitter)  # Apply theme styling to splitter
@@ -204,33 +203,33 @@ class MainWindow(QMainWindow):
         # Set central widget background using theme colors
 
         
-        logging.info("    Creating DAT panel...")
+        print("    Creating DAT panel...")
         # Left panel - DAT games
         left_panel = self.create_dat_panel()
-        logging.info("    DAT panel created.")
+        print("    DAT panel created.")
         content_splitter.addWidget(left_panel)
         
-        logging.info("    Creating ROM panel...")
+        print("    Creating ROM panel...")
         # Right panel - ROMs
         right_panel = self.create_rom_panel()
-        logging.info("    ROM panel created.")
-        logging.info("    Adding ROM panel to splitter...")
+        print("    ROM panel created.")
+        print("    Adding ROM panel to splitter...")
         content_splitter.addWidget(right_panel)
-        logging.info("    ROM panel added to splitter.")
+        print("    ROM panel added to splitter.")
         
         # Set splitter proportions
-        logging.info("    Setting splitter sizes...")
+        print("    Setting splitter sizes...")
         content_splitter.setSizes([600, 600])
-        logging.info("    Splitter sizes set.")
-        logging.info("    Adding splitter to main layout...")
+        print("    Splitter sizes set.")
+        print("    Adding splitter to main layout...")
         main_layout.addWidget(content_splitter)
-        logging.info("    Splitter added to main layout.")
-        logging.info("  UI setup finished.")
+        print("    Splitter added to main layout.")
+        print("  UI setup finished.")
         
         # Bottom panel - Filters and actions
-        logging.info("    Creating bottom panel...")
+        print("    Creating bottom panel...")
         bottom_panel = self.create_bottom_panel()
-        logging.info("    Bottom panel created.")
+        print("    Bottom panel created.")
         main_layout.addWidget(bottom_panel)
         
         # Apply styling using theme colors
@@ -273,11 +272,11 @@ class MainWindow(QMainWindow):
         self.dat_stats_label.setStyleSheet(self.theme.get_dat_stats_label_style())
         layout.addWidget(self.dat_stats_label)
         
-        logging.info("      ROM panel widget created.")
+        print("      ROM panel widget created.")
         return panel
     
     def create_rom_panel(self) -> QWidget:
-        logging.info("      Creating ROM panel widget...")
+        print("      Creating ROM panel widget...")
         """Create the user ROMs panel with tabs for current and missing ROMs."""
         panel = QGroupBox("User ROMs")
         panel.setObjectName("rom_panel")
@@ -302,7 +301,7 @@ class MainWindow(QMainWindow):
         self.rom_tabs.setStyleSheet("background-color: transparent;")
         
         # Correct ROMs tab
-        logging.info("      Creating correct ROMs tab...")
+        print("      Creating correct ROMs tab...")
         correct_tab = QWidget()
         correct_layout = QVBoxLayout(correct_tab)
         correct_layout.setContentsMargins(0, 0, 0, 0)
@@ -322,9 +321,9 @@ class MainWindow(QMainWindow):
         self.correct_tree.setSelectionMode(QTreeWidget.SelectionMode.ExtendedSelection)  # Allow multiple selection
         correct_layout.addWidget(self.correct_tree)
         
-        logging.info("      Correct ROMs tab created.")
+        print("      Correct ROMs tab created.")
         # Missing ROMs tab
-        logging.info("      Creating missing ROMs tab...")
+        print("      Creating missing ROMs tab...")
         missing_tab = QWidget()
         missing_layout = QVBoxLayout(missing_tab)
         missing_layout.setContentsMargins(0, 0, 0, 0)
@@ -346,33 +345,33 @@ class MainWindow(QMainWindow):
         self.missing_tree.customContextMenuRequested.connect(self.show_missing_tree_context_menu)
         missing_layout.addWidget(self.missing_tree)
         
-        logging.info("      Missing ROMs tab created.")
-        # Unrecognised ROMs tab
-        logging.info("      Creating unrecognised ROMs tab...")
-        unrecognised_tab = QWidget()
-        unrecognised_layout = QVBoxLayout(unrecognised_tab)
-        unrecognised_layout.setContentsMargins(0, 0, 0, 0)
+        print("      Missing ROMs tab created.")
+        # Unrecognized ROMs tab
+        print("      Creating unrecognized ROMs tab...")
+        unrecognized_tab = QWidget()
+        unrecognized_layout = QVBoxLayout(unrecognized_tab)
+        unrecognized_layout.setContentsMargins(0, 0, 0, 0)
         
-        # Unrecognised ROMs tree
-        self.unrecognised_tree = QTreeWidget()
-        self.unrecognised_tree.setHeaderLabels([
+        # Unrecognized ROMs tree
+        self.unrecognized_tree = QTreeWidget()
+        self.unrecognized_tree.setHeaderLabels([
             "#", "File Name", "CRC32"
         ])
-        self.unrecognised_tree.setAlternatingRowColors(True)
-        self.unrecognised_tree.setIndentation(0)
-        self.unrecognised_tree.setSortingEnabled(True)
+        self.unrecognized_tree.setAlternatingRowColors(True)
+        self.unrecognized_tree.setIndentation(0)
+        self.unrecognized_tree.setSortingEnabled(True)
         size_policy = QSizePolicy(QSizePolicy.Policy.Preferred, QSizePolicy.Policy.Expanding)
-        self.unrecognised_tree.setSizePolicy(size_policy)
-        self.unrecognised_tree.setColumnWidth(0, self.theme.layout['tree_index_column_width'])  # # column
-        self.unrecognised_tree.setColumnWidth(1, self.theme.layout['tree_name_column_width'])  # Filename column
-        self.unrecognised_tree.setSelectionMode(QTreeWidget.SelectionMode.ExtendedSelection)
-        self.unrecognised_tree.setContextMenuPolicy(Qt.ContextMenuPolicy.CustomContextMenu)
-        self.unrecognised_tree.customContextMenuRequested.connect(self.show_unrecognised_tree_context_menu)
-        unrecognised_layout.addWidget(self.unrecognised_tree)
+        self.unrecognized_tree.setSizePolicy(size_policy)
+        self.unrecognized_tree.setColumnWidth(0, self.theme.layout['tree_index_column_width'])  # # column
+        self.unrecognized_tree.setColumnWidth(1, self.theme.layout['tree_name_column_width'])  # Filename column
+        self.unrecognized_tree.setSelectionMode(QTreeWidget.SelectionMode.ExtendedSelection)
+        self.unrecognized_tree.setContextMenuPolicy(Qt.ContextMenuPolicy.CustomContextMenu)
+        self.unrecognized_tree.customContextMenuRequested.connect(self.show_unrecognized_tree_context_menu)
+        unrecognized_layout.addWidget(self.unrecognized_tree)
         
-        logging.info("      Unrecognised ROMs tab created.")
+        print("      Unrecognized ROMs tab created.")
         # Broken ROMs tab
-        logging.info("      Creating broken ROMs tab...")
+        print("      Creating broken ROMs tab...")
         broken_tab = QWidget()
         broken_layout = QVBoxLayout(broken_tab)
         broken_layout.setContentsMargins(0, 0, 0, 0)
@@ -392,9 +391,9 @@ class MainWindow(QMainWindow):
         self.broken_tree.setSelectionMode(QTreeWidget.SelectionMode.ExtendedSelection)
         broken_layout.addWidget(self.broken_tree)
 
-        logging.info("      Broken ROMs tab created.")
+        print("      Broken ROMs tab created.")
         # Ignored ROMs tab
-        logging.info("      Creating ignored ROMs tab...")
+        print("      Creating ignored ROMs tab...")
         ignored_tab = QWidget()
         ignored_layout = QVBoxLayout(ignored_tab)
         ignored_layout.setContentsMargins(0, 0, 0, 0)
@@ -402,7 +401,7 @@ class MainWindow(QMainWindow):
         # Ignored ROMs tree
         self.ignored_tree = QTreeWidget()
         self.ignored_tree.setHeaderLabels([
-            "#", "Game Name", "Status", "Region", "Language", "CRC32"
+            "#", "Game Name", "Region", "Language", "CRC32"
         ])
         self.ignored_tree.setAlternatingRowColors(True)
         self.ignored_tree.setIndentation(0)
@@ -421,24 +420,24 @@ class MainWindow(QMainWindow):
             'correct': {'color': '#45ae6b', 'icon': 'fa5s.check'},
             'missing': {'color': '#ffff04', 'icon': 'fa5s.question'},
             'ignored': {'color': '#cfcfcf', 'icon': 'fa5s.ban'},
-            'unrecognised': {'color': '#ffa33c', 'icon': 'fa5s.exclamation-triangle'},
+            'unrecognized': {'color': '#ffa33c', 'icon': 'fa5s.exclamation-triangle'},
             'broken': {'color': '#e26c6c', 'icon': 'fa5s.exclamation-circle'}
         }
         
         # Add tabs to the tab widget with QtAwesome icons (smaller size)
-        correct_icon = qta.icon(tab_colors['correct']['icon'], color=tab_colors['correct']['color'], scale_factor=0.7)
-        missing_icon = qta.icon(tab_colors['missing']['icon'], color=tab_colors['missing']['color'], scale_factor=0.7)
-        ignored_icon = qta.icon(tab_colors['ignored']['icon'], color=tab_colors['ignored']['color'], scale_factor=0.7)
-        unrecognised_icon = qta.icon(tab_colors['unrecognised']['icon'], color=tab_colors['unrecognised']['color'], scale_factor=0.7)
-        broken_icon = qta.icon(tab_colors['broken']['icon'], color=tab_colors['broken']['color'], scale_factor=0.7)
+        # correct_icon = qta.icon(tab_colors['correct']['icon'], color=tab_colors['correct']['color'], scale_factor=0.7)
+        # missing_icon = qta.icon(tab_colors['missing']['icon'], color=tab_colors['missing']['color'], scale_factor=0.7)
+        # ignored_icon = qta.icon(tab_colors['ignored']['icon'], color=tab_colors['ignored']['color'], scale_factor=0.7)
+        # unrecognized_icon = qta.icon(tab_colors['unrecognized']['icon'], color=tab_colors['unrecognized']['color'], scale_factor=0.7)
+        # broken_icon = qta.icon(tab_colors['broken']['icon'], color=tab_colors['broken']['color'], scale_factor=0.7)
         
-        logging.info("      Ignored ROMs tab created.")
-        # Add tabs with icons
-        self.rom_tabs.addTab(correct_tab, correct_icon, "Correct")
-        self.rom_tabs.addTab(missing_tab, missing_icon, "Missing")
-        self.rom_tabs.addTab(ignored_tab, ignored_icon, "Ignored")
-        self.rom_tabs.addTab(unrecognised_tab, unrecognised_icon, "Unrecognised")
-        self.rom_tabs.addTab(broken_tab, broken_icon, "Broken")
+        print("      Ignored ROMs tab created.")
+        # Add tabs
+        self.rom_tabs.addTab(correct_tab, "Correct")
+        self.rom_tabs.addTab(missing_tab, "Missing")
+        self.rom_tabs.addTab(ignored_tab, "Ignored")
+        self.rom_tabs.addTab(unrecognized_tab, "Unrecognized")
+        self.rom_tabs.addTab(broken_tab, "Broken")
         
         # Store tab colors for later use
         self.tab_colors = tab_colors
@@ -478,7 +477,7 @@ class MainWindow(QMainWindow):
         tab_bar.setTabTextColor(0, QColor(tab_colors['correct']['color']))
         tab_bar.setTabTextColor(1, QColor(tab_colors['missing']['color']))
         tab_bar.setTabTextColor(2, QColor(tab_colors['ignored']['color']))
-        tab_bar.setTabTextColor(3, QColor(tab_colors['unrecognised']['color']))
+        tab_bar.setTabTextColor(3, QColor(tab_colors['unrecognized']['color']))
         tab_bar.setTabTextColor(4, QColor(tab_colors['broken']['color']))
         
         # No longer setting selected tab text to white to maintain original tab colors
@@ -496,15 +495,15 @@ class MainWindow(QMainWindow):
         
         return panel
 
-    def show_unrecognised_tree_context_menu(self, position):
-        """Show context menu for the unrecognised ROMs tree."""
-        selected_items = self.unrecognised_tree.selectedItems()
+    def show_unrecognized_tree_context_menu(self, position):
+        """Show context menu for the unrecognized ROMs tree."""
+        selected_items = self.unrecognized_tree.selectedItems()
         if not selected_items:
             return
 
         menu = QMenu()
         ignore_action = menu.addAction("Ignore")
-        action = menu.exec(self.unrecognised_tree.mapToGlobal(position))
+        action = menu.exec(self.unrecognized_tree.mapToGlobal(position))
 
         if action == ignore_action:
             self.move_to_ignored(selected_items)
@@ -514,46 +513,32 @@ class MainWindow(QMainWindow):
         if not self.current_system_id:
             return
 
-        # Keep track of items to remove from the tree
-        items_to_remove = []
-
         for item in items:
             if original_status == ROMStatus.MISSING:
                 crc32 = item.text(4)  # Assuming CRC32 is in the fifth column
-                # For missing ROMs, we need to add a new entry to the database
-                self.scanned_roms_manager.add_rom(
+                self.scanned_roms_manager.update_rom_status(
                     self.current_system_id,
-                    status=ROMStatus.IGNORED,
-                    crc32=crc32,
-                    original_status=original_status
+                    ROMStatus.IGNORED,
+                    crc32=crc32
                 )
                 # Add to in-memory ignored_crcs set
                 if crc32:
                     self.ignored_crcs.add(crc32)
+                    # Update the settings manager with the new ignored CRC
+                    current_ignored = self.settings_manager.get_ignored_crcs(self.current_system_id)
+                    if crc32 not in current_ignored:
+                        current_ignored.append(crc32)
+                        self.settings_manager.set_ignored_crcs(current_ignored, self.current_system_id)
+            else:
                 file_path = item.text(1)  # Assuming file path is in the second column
                 # Get the CRC32 for this file if available
                 crc32 = item.text(4) if item.columnCount() > 4 else None
-                if original_status == ROMStatus.NOT_RECOGNIZED:
-                    # For unrecognised ROMs, get the full path from UserRole
-                    file_path = item.data(1, Qt.ItemDataRole.UserRole)
-                    crc32 = item.text(2) if item.columnCount() > 2 else None  # CRC32 is in the third column
-                    
-                    # Debug print to check values
-                    logging.info(f"Moving unrecognised ROM to ignored: {file_path}, CRC32: {crc32}")
-                else:
-                    # For other statuses, use the default column structure
-                    file_path = item.text(1)  # Assuming file path is in the second column
-                    crc32 = item.text(4) if item.columnCount() > 4 else None  # CRC32 is in the fifth column
                 
-                # For unrecognised ROMs, we need to update by both file_path and crc32
                 self.scanned_roms_manager.update_rom_status(
                     self.current_system_id,
                     ROMStatus.IGNORED,
-                    file_path=file_path,
-                    crc32=crc32,
-                    original_status=original_status
+                    file_path=file_path
                 )
-                logging.info(f"Updated ROM status to IGNORED for {file_path} with CRC32: {crc32}")
                 
                 # Add to in-memory ignored_crcs set if we have the CRC32
                 if crc32:
@@ -563,27 +548,6 @@ class MainWindow(QMainWindow):
                     if crc32 not in current_ignored:
                         current_ignored.append(crc32)
                         self.settings_manager.set_ignored_crcs(current_ignored, self.current_system_id)
-                
-                # Add item to removal list
-                items_to_remove.append(item)
-        
-        # Remove items from their original tree
-        if original_status == ROMStatus.MISSING:
-            tree = self.missing_tree
-        elif original_status == ROMStatus.NOT_RECOGNIZED:
-            tree = self.unrecognised_tree
-        else:
-            tree = None
-            
-        if tree:
-            root = tree.invisibleRootItem()
-            for item in items_to_remove:
-                index = root.indexOfChild(item)
-                if index >= 0:
-                    root.removeChild(item)
-        
-        # Update the ignored tree to show the newly added items
-        self.populate_ignored_tree()
 
         # Refresh the ROM lists and stats
         self.update_rom_lists()
@@ -618,7 +582,7 @@ class MainWindow(QMainWindow):
             # Update all ROM trees
             self.update_correct_roms()
             self.update_missing_roms()
-            self.update_unrecognised_roms()
+            self.update_unrecognized_roms()
             self.update_broken_roms()
             self.populate_ignored_tree()
             # Update stats
@@ -629,72 +593,40 @@ class MainWindow(QMainWindow):
     def unignore_selected_items(self, items):
         """Move selected ROMs from the ignored list back to their original status."""
         if not self.current_system_id:
-            logging.info("unignore_selected_items: No current_system_id")
             return
 
-        logging.info(f"unignore_selected_items: Processing {len(items)} items")
         for item in items:
             # Get the CRC32 value for this item
             crc32 = item.text(4)
-            logging.info(f"unignore_selected_items: Processing item with CRC32: {crc32}")
             
             # Remove from in-memory ignored_crcs set
             if crc32 and crc32 in self.ignored_crcs:
                 self.ignored_crcs.remove(crc32)
-                logging.info(f"unignore_selected_items: Removed {crc32} from in-memory ignored_crcs set")
                 
                 # Update the settings manager by removing this CRC
                 current_ignored = self.settings_manager.get_ignored_crcs(self.current_system_id)
                 if crc32 in current_ignored:
                     current_ignored.remove(crc32)
                     self.settings_manager.set_ignored_crcs(current_ignored, self.current_system_id)
-                    logging.info(f"unignore_selected_items: Updated settings manager by removing {crc32}")
             
             # This is a simplification. We'd need to know the original status.
             # For now, we'll move them to unrecognized if they have a file path, and missing if they don't.
             file_path = item.text(1)
-            logging.info(f"unignore_selected_items: Item file_path: '{file_path}'")
             if file_path:
-                logging.info(f"unignore_selected_items: Updating ROM status to NOT_RECOGNIZED for file_path: {file_path}")
                 self.scanned_roms_manager.update_rom_status(
                     self.current_system_id,
                     ROMStatus.NOT_RECOGNIZED,
                     file_path=file_path
                 )
             else:
-                logging.info(f"unignore_selected_items: No file_path, handling as missing ROM with CRC32: {crc32}")
-                # For missing ROMs, we need to check if they exist in the database
-                # If not, we need to insert them first
-                rom_data = self.scanned_roms_manager.get_rom_by_crc32(self.current_system_id, crc32)
-                if not rom_data:
-                    logging.info(f"unignore_selected_items: ROM with CRC32 {crc32} not found in database, inserting as missing")
-                    # Find game data if available
-                    game_data = None
-                    for game in self.all_games:
-                        if game.get('crc32') == crc32:
-                            game_data = game
-                            logging.info(f"unignore_selected_items: Found game data for CRC32 {crc32}: {game.get('major_name')}")
-                            break
-                    
-                    # Insert the missing ROM into the database
-                    self.scanned_roms_manager.insert_missing_rom(
-                        self.current_system_id,
-                        crc32,
-                        game_data
-                    )
-                else:
-                    logging.info(f"unignore_selected_items: ROM with CRC32 {crc32} found in database, updating status to MISSING")
-                    # If it exists, just update its status
-                    self.scanned_roms_manager.update_rom_status(
-                        self.current_system_id,
-                        ROMStatus.MISSING,
-                        crc32=crc32
-                    )
+                self.scanned_roms_manager.update_rom_status(
+                    self.current_system_id,
+                    ROMStatus.MISSING,
+                    crc32=crc32
+                )
 
-        logging.info("unignore_selected_items: Refreshing ROM lists")
-        self.load_dat_games()
+        # Refresh the ROM lists
         self.update_rom_lists()
-
                 
     def update_tab_styles(self, index=None):
         """Update tab styles using direct QTabBar methods."""
@@ -738,7 +670,7 @@ class MainWindow(QMainWindow):
         tab_bar.setTabTextColor(0, QColor(self.tab_colors['correct']['color']))
         tab_bar.setTabTextColor(1, QColor(self.tab_colors['missing']['color']))
         tab_bar.setTabTextColor(2, QColor(self.tab_colors['ignored']['color']))
-        tab_bar.setTabTextColor(3, QColor(self.tab_colors['unrecognised']['color']))
+        tab_bar.setTabTextColor(3, QColor(self.tab_colors['unrecognized']['color']))
         tab_bar.setTabTextColor(4, QColor(self.tab_colors['broken']['color']))
         
         # No longer changing the selected tab text color to white
@@ -750,117 +682,24 @@ class MainWindow(QMainWindow):
 
     def populate_ignored_tree(self):
         """Populate the ignored ROMs tree based on self.ignored_crcs."""
-        print(f"DEBUG: populate_ignored_tree called with {len(self.ignored_crcs)} ignored CRCs")
         self.ignored_tree.clear()
-        if not self.ignored_crcs:
-            print("DEBUG: No ignored CRCs, returning early")
+        if not self.all_games or not self.ignored_crcs:
             return
 
         row_number = 0
-        # First try to find games in the all_games list (for DAT games)
         for crc in self.ignored_crcs:
-            print(f"DEBUG: Processing CRC {crc}")
-            game_details = next((g for g in self.all_games if g.get('crc32') == crc), None) if self.all_games else None
+            game_details = next((g for g in self.all_games if g.get('crc32') == crc), None)
             if game_details:
-                print(f"DEBUG: Found DAT game: {game_details['major_name']}")
                 row_number += 1
-                
-                # Get original_status to display in the title
-                original_status = None
-                if hasattr(self, 'scanned_roms_manager'):
-                    rom_data = self.scanned_roms_manager.get_rom_by_crc32(self.current_system_id, crc)
-                    if rom_data:
-                        original_status = rom_data.get('original_status')
-
-                status_map = {
-                    'not_recognized': 'Unrecognised',
-                    'missing': 'Missing'
-                }
-                display_status = status_map.get(original_status, original_status)
-                
-                # Create display name with original_status
-                display_name = game_details['major_name']
-                
                 item = NumericTreeWidgetItem([
                     str(row_number),
-                    display_name,
-                    display_status if display_status else '',
+                    game_details['major_name'],
                     game_details.get('region', ''),
                     game_details.get('languages', ''),
                     game_details['crc32']
                 ])
                 item.setData(0, Qt.ItemDataRole.UserRole, row_number) # For sorting
-                
-                # Apply color coding based on original_status
-                if original_status:
-                    print(f"DEBUG: DAT game original_status: '{original_status}'")
-                    if original_status == 'missing':
-                        print(f"DEBUG: Applying YELLOW color to DAT game {game_details['major_name']}")
-                        # Yellow for items moved from Missing
-                        for col in range(item.columnCount()):
-                            item.setForeground(col, QColor('#f2d712'))
-                    elif original_status == 'not_recognized':
-                        print(f"DEBUG: Applying ORANGE color to DAT game {game_details['major_name']}")
-                        # Orange for items moved from Unrecognised
-                        for col in range(item.columnCount()):
-                            item.setForeground(col, QColor('#ff993c'))
-                    else:
-                        print(f"DEBUG: No color applied to DAT game, original_status: '{original_status}'")
-                else:
-                    print(f"DEBUG: No ROM data found for DAT game {game_details['major_name']}")
-                
                 self.ignored_tree.addTopLevelItem(item)
-            else:
-                print(f"DEBUG: CRC {crc} not found in DAT, checking database")
-                # For unrecognised ROMs that aren't in the DAT, get them from the database
-                if hasattr(self, 'scanned_roms_manager'):
-                    # Try to find the ROM in the database
-                    rom_data = self.scanned_roms_manager.get_rom_by_crc32(self.current_system_id, crc)
-                    if rom_data:
-                        print(f"DEBUG: Found unrecognised ROM in database: {rom_data}")
-                        row_number += 1
-                        filename = Path(rom_data['file_path']).name if 'file_path' in rom_data else 'Unknown'
-                        
-                        # Get original_status and add to display name
-                        original_status = rom_data.get('original_status')
-                        display_filename = filename
-
-                        status_map = {
-                            'not_recognized': 'Unrecognised',
-                            'missing': 'Missing'
-                        }
-                        display_status = status_map.get(original_status, original_status)
-                        
-                        item = NumericTreeWidgetItem([
-                            str(row_number),
-                            display_filename,  # Use filename with original_status as the name
-                            display_status if display_status else '',
-                            '',  # No region for unrecognised ROMs
-                            '',  # No languages for unrecognised ROMs
-                            crc
-                        ])
-                        item.setData(0, Qt.ItemDataRole.UserRole, row_number) # For sorting
-                        
-                        # Apply color coding based on original_status
-                        print(f"DEBUG: Unrecognised ROM original_status: '{original_status}'")
-                        if original_status == 'missing':
-                            print(f"DEBUG: Applying YELLOW color to unrecognised ROM {filename}")
-                            # Yellow for items moved from Missing
-                            for col in range(item.columnCount()):
-                                item.setForeground(col, QColor('#f2d712'))
-                        elif original_status == 'not_recognized':
-                            print(f"DEBUG: Applying ORANGE color to unrecognised ROM {filename}")
-                            # Orange for items moved from Unrecognised
-                            for col in range(item.columnCount()):
-                                item.setForeground(col, QColor('#ff993c'))
-                        else:
-                            print(f"DEBUG: No color applied to unrecognised ROM, original_status: '{original_status}'")
-                        
-                        self.ignored_tree.addTopLevelItem(item)
-                    else:
-                        print(f"DEBUG: No ROM data found in database for CRC {crc}")
-
-        print(f"DEBUG: populate_ignored_tree finished, added {self.ignored_tree.topLevelItemCount()} items")
         self.ignored_tree.sortItems(0, Qt.SortOrder.AscendingOrder)
 
     def create_bottom_panel(self) -> QWidget:
@@ -1254,7 +1093,7 @@ class MainWindow(QMainWindow):
             # Clear ROM tree and scan results when changing systems
         self.correct_tree.clear()
         self.missing_tree.clear()
-        self.unrecognised_tree.clear()
+        self.unrecognized_tree.clear()
         self.broken_tree.clear()
         self.current_scan_results = []
         
@@ -1278,7 +1117,7 @@ class MainWindow(QMainWindow):
                 # Load existing scan results from database
                 self.update_correct_roms()
                 self.update_missing_roms()
-                self.update_unrecognised_roms()
+                self.update_unrecognized_roms()
                 self.update_broken_roms()
                 self.update_rom_stats()
             else:
@@ -1503,7 +1342,7 @@ class MainWindow(QMainWindow):
         
         self.update_correct_roms()
         self.update_missing_roms()
-        self.update_unrecognised_roms()
+        self.update_unrecognized_roms()
         self.update_broken_roms()
         self.update_rom_stats()
         
@@ -1542,7 +1381,7 @@ class MainWindow(QMainWindow):
                 # Update all ROM-related UI elements
                 self.update_correct_roms()
                 self.update_missing_roms()
-                self.update_unrecognised_roms()
+                self.update_unrecognized_roms()
                 self.update_broken_roms()
                 
                 # Reset stats
@@ -1675,16 +1514,13 @@ class MainWindow(QMainWindow):
     
     def update_missing_roms(self):
         """Update the missing ROMs tab with games that are in the DAT but not found in the scan."""
-        logging.info(f"update_missing_roms: Current ignored_crcs: {self.ignored_crcs}")
         if not hasattr(self, 'all_games') or not self.all_games:
-            logging.info("update_missing_roms: No all_games attribute or empty all_games")
             return
             
         self.missing_tree.clear()
         
         current_system_id = self.system_combo.currentData()
         if current_system_id is None:
-            logging.info("update_missing_roms: No current_system_id")
             return
         
         # Get all matched games from scan results
@@ -1695,15 +1531,11 @@ class MainWindow(QMainWindow):
             for rom_data in all_scanned_roms:
                 if rom_data.get('matched_game_crc32'):
                     matched_crcs.add(rom_data['matched_game_crc32'])
-            logging.info(f"update_missing_roms: Got {len(matched_crcs)} matched CRCs from database")
         elif self.current_scan_results:
             # Fallback to memory results
             for result in self.current_scan_results:
                 if result.matched_game and result.matched_game.get('crc32'):
                     matched_crcs.add(result.matched_game['crc32'])
-            logging.info(f"update_missing_roms: Got {len(matched_crcs)} matched CRCs from memory")
-        else:
-            logging.info("update_missing_roms: No scanned_roms_manager or current_scan_results")
         
         # Find missing games - only include games that pass the current filters
         missing_games = []
@@ -1716,21 +1548,11 @@ class MainWindow(QMainWindow):
             crc32 = item.text(5)  # CRC is in column 5 (#, Game Name, Region, Language, Size, CRC32)
             visible_games.append((game_name, crc32))
         
-        logging.info(f"update_missing_roms: Found {len(visible_games)} visible games in DAT tree")
-        logging.info(f"update_missing_roms: Ignored CRCs count: {len(self.ignored_crcs)}")
-        logging.info(f"update_missing_roms: Ignored CRCs: {self.ignored_crcs}")
-        
         # Iterate through games currently visible in the DAT tree
         # and check if they are missing from the scan results AND not in the ignore list.
         row_number = 0
         for game_name, crc32 in visible_games:
-            logging.info(f"update_missing_roms: Checking game '{game_name}' with CRC32 '{crc32}'")
-
-            logging.info(f"update_missing_roms: Is in matched_crcs? {crc32 in matched_crcs}")
-            logging.info(f"update_missing_roms: Is in ignored_crcs? {crc32 in self.ignored_crcs}")
-            
             if crc32 and crc32 not in matched_crcs and crc32 not in self.ignored_crcs:
-                logging.info(f"update_missing_roms: Game '{game_name}' with CRC32 '{crc32}' is missing and not ignored")
                 # Find the full game details from self.all_games for display
                 # This assumes crc32 is unique enough for a quick lookup if needed,
                 # or that visible_games could store more complete game objects.
@@ -1739,7 +1561,6 @@ class MainWindow(QMainWindow):
                 if game_details:
                     missing_games.append(game_details)
                     row_number += 1
-                    logging.info(f"update_missing_roms: Adding game '{game_details['major_name']}' to missing_tree")
                     item = NumericTreeWidgetItem([
                         str(row_number),  # Display without leading zeros
                         game_details['major_name'],
@@ -1750,13 +1571,6 @@ class MainWindow(QMainWindow):
                     # Store numeric value for proper sorting
                     item.setData(0, Qt.ItemDataRole.UserRole, row_number)
                     self.missing_tree.addTopLevelItem(item)
-                else:
-                    logging.info(f"update_missing_roms: Could not find game details for CRC32 '{crc32}'")
-            else:
-                if crc32 in matched_crcs:
-                    logging.info(f"update_missing_roms: Game '{game_name}' with CRC32 '{crc32}' is in matched_crcs, skipping")
-                if crc32 in self.ignored_crcs:
-                    logging.info(f"update_missing_roms: Game '{game_name}' with CRC32 '{crc32}' is in ignored_crcs, skipping")
         
         # Sort by game name alphabetically
         self.missing_tree.sortItems(0, Qt.SortOrder.AscendingOrder)
@@ -1931,8 +1745,8 @@ class MainWindow(QMainWindow):
             self.update_rom_stats()
             self.update_missing_roms()
             
-            # Update unrecognised and broken ROM tabs (they will use database if available)
-            self.update_unrecognised_roms()
+            # Update unrecognized and broken ROM tabs (they will use database if available)
+            self.update_unrecognized_roms()
             self.update_broken_roms()
             
             # Force UI update to ensure all trees refresh
@@ -1941,12 +1755,12 @@ class MainWindow(QMainWindow):
         # Save the current filter settings for this system
         self.save_current_filter_settings()
     
-    def update_unrecognised_roms(self, results: List[ROMScanResult] = None):
-        """Update the unrecognised ROMs tab with ROMs that are not in the DAT.
+    def update_unrecognized_roms(self, results: List[ROMScanResult] = None):
+        """Update the unrecognized ROMs tab with ROMs that are not in the DAT.
         
-        Filters unrecognised ROMs by the currently selected system.
+        Filters unrecognized ROMs by the currently selected system.
         """
-        self.unrecognised_tree.clear()
+        self.unrecognized_tree.clear()
         current_system_id = self.system_combo.currentData()
         if current_system_id is None:
             return # No system selected, so nothing to show
@@ -1959,23 +1773,16 @@ class MainWindow(QMainWindow):
             )
             
             for rom_data in scanned_roms:
-                # Skip ROMs that are in the ignored list
-                crc32 = rom_data['calculated_crc32']
-                if crc32 and crc32 in self.ignored_crcs:
-                    continue
-                    
                 filename = Path(rom_data['file_path']).name
                 row_number += 1
                 item = NumericTreeWidgetItem([
                     str(row_number),  # Display without leading zeros
                     filename,
-                    crc32 or ''
+                    rom_data['calculated_crc32'] or ''
                 ])
                 # Store numeric value for proper sorting
                 item.setData(0, Qt.ItemDataRole.UserRole, row_number)
-                # Store the full file path in a custom role
-                item.setData(1, Qt.ItemDataRole.UserRole, rom_data['file_path'])
-                self.unrecognised_tree.addTopLevelItem(item)
+                self.unrecognized_tree.addTopLevelItem(item)
         elif results:
             # Fallback to memory results
             for result in results:
@@ -1989,10 +1796,10 @@ class MainWindow(QMainWindow):
                     ])
                     # Store numeric value for proper sorting
                     item.setData(0, Qt.ItemDataRole.UserRole, row_number)
-                    self.unrecognised_tree.addTopLevelItem(item)
+                    self.unrecognized_tree.addTopLevelItem(item)
         
         # Sort by file name alphabetically
-        self.unrecognised_tree.sortItems(0, Qt.SortOrder.AscendingOrder)
+        self.unrecognized_tree.sortItems(0, Qt.SortOrder.AscendingOrder)
     
     def update_broken_roms(self, results: List[ROMScanResult] = None):
         """Update the broken ROMs tab with ROMs that are corrupted or unreadable.
@@ -2090,7 +1897,6 @@ class MainWindow(QMainWindow):
         missing_count = total_dat_games 
         unrecognised_count = 0
         broken_count = 0
-        ignored_count = len(self.ignored_crcs)
         total_roms = 0
 
         if system_results_dicts:
@@ -2100,12 +1906,6 @@ class MainWindow(QMainWindow):
 
             for result_dict in system_results_dicts:
                 status_val = result_dict.get('status')
-                crc32 = result_dict.get('calculated_crc32')
-                
-                # Skip ROMs that are in the ignored list
-                if crc32 and crc32 in self.ignored_crcs:
-                    continue
-                    
                 if status_val == ROMStatus.NOT_RECOGNIZED.value or status_val == 'not_recognized':
                     current_unrecognised += 1
                 elif status_val == ROMStatus.BROKEN.value or status_val == 'broken':
@@ -2117,7 +1917,7 @@ class MainWindow(QMainWindow):
                         matched_crcs.add(rom_crc)
             
             matching_count = len(matched_crcs)
-            missing_count = total_dat_games - matching_count - ignored_count
+            missing_count = total_dat_games - matching_count
             unrecognised_count = current_unrecognised
             broken_count = current_broken
             total_roms = len(system_results_dicts)
@@ -2140,24 +1940,16 @@ class MainWindow(QMainWindow):
                             db_matched_crcs.add(matched_crc)
                 
                 matching_count = len(db_matched_crcs)
-                missing_count = total_dat_games - matching_count - ignored_count
-                
-                # Get unrecognised count from database but filter out ignored ROMs
-                unrecognised_roms = self.scanned_roms_manager.get_scanned_roms_by_status(
-                    current_system_id, ROMStatus.NOT_RECOGNIZED
-                )
-                # Count only those not in ignored_crcs
-                unrecognised_count = sum(1 for rom in unrecognised_roms 
-                                      if not (rom.get('calculated_crc32') and rom.get('calculated_crc32') in self.ignored_crcs))
-                
+                missing_count = total_dat_games - matching_count
+                unrecognised_count = scan_summary.get('not_recognized', 0)
                 broken_count = scan_summary.get('broken', 0)
                 total_roms = scan_summary.get('total', 0)
         # If both system_results_dicts is empty and the elif condition is false (e.g., no scan_summary or it's empty),
         # the stats will remain at their initial zero/default values.
         # The final self.rom_stats_label.setText outside this block will handle displaying these.
         
-        # Update the stats label with the new format: Total DAT | Matching | Missing | Ignored | Unrecognised | Broken | Total ROMs
-        self.rom_stats_label.setText(f"<b>Total DAT:</b> {total_dat_games} | <b>Matching:</b> {matching_count} | <b>Missing:</b> {missing_count} | <b>Ignored:</b> {ignored_count} | <b>Unrecognised:</b> {unrecognised_count} | <b>Broken:</b> {broken_count} | <b>Total ROMs:</b> {total_roms}")
+        # Update the stats label with the new format: Total DAT | Matching | Missing | Unrecognised | Broken | Total ROMs
+        self.rom_stats_label.setText(f"<b>Total DAT:</b> {total_dat_games} | <b>Matching:</b> {matching_count} | <b>Missing:</b> {missing_count} | <b>Unrecognised:</b> {unrecognised_count} | <b>Broken:</b> {broken_count} | <b>Total ROMs:</b> {total_roms}")
         self.rom_stats_label.repaint()  # Force immediate repaint
     
     def save_current_filter_settings(self):
@@ -2405,42 +2197,42 @@ class MainWindow(QMainWindow):
         renamed_count = 0
         failed_renames = []
         
-        logging.debug(f"Found {len(wrong_filename_roms)} ROMs with wrong filenames")
+        print(f"DEBUG: Found {len(wrong_filename_roms)} ROMs with wrong filenames")
         
         for i, rom_data in enumerate(wrong_filename_roms):
-            logging.debug(f"Processing ROM {i+1}/{len(wrong_filename_roms)}: {rom_data}")
+            print(f"DEBUG: Processing ROM {i+1}/{len(wrong_filename_roms)}: {rom_data}")
             try:
                 old_path = Path(rom_data['file_path'])
-                logging.debug(f"Checking if file exists: {old_path}")
+                print(f"DEBUG: Checking if file exists: {old_path}")
                 if not old_path.exists():
                     failed_renames.append(f"{old_path.name}: File not found")
-                    logging.debug(f"File not found: {old_path}")
+                    print(f"DEBUG: File not found: {old_path}")
                     continue
                 
                 # Get the correct filename from the matched game
-                logging.debug(f"Available keys in rom_data: {list(rom_data.keys())}")
-                logging.debug(f"calculated_crc32 value: {rom_data.get('calculated_crc32')}")
-                logging.debug(f"calculated_crc32 type: {type(rom_data.get('calculated_crc32'))}")
+                print(f"DEBUG: Available keys in rom_data: {list(rom_data.keys())}")
+                print(f"DEBUG: calculated_crc32 value: {rom_data.get('calculated_crc32')}")
+                print(f"DEBUG: calculated_crc32 type: {type(rom_data.get('calculated_crc32'))}")
                 
                 matched_crc32 = rom_data.get('calculated_crc32')
-                logging.debug(f"Matched CRC32: {matched_crc32}")
+                print(f"DEBUG: Matched CRC32: {matched_crc32}")
                 if not matched_crc32:
                     failed_renames.append(f"{old_path.name}: No matched game found")
-                    logging.debug(f"No matched CRC32 found")
+                    print(f"DEBUG: No matched CRC32 found")
                     continue
                 
                 # Get game details from database
-                logging.debug(f"Getting game details for CRC32: {matched_crc32}, size: {old_path.stat().st_size}")
+                print(f"DEBUG: Getting game details for CRC32: {matched_crc32}, size: {old_path.stat().st_size}")
                 game_details = self.db_manager.get_game_by_crc(current_system_id, matched_crc32, old_path.stat().st_size)
-                logging.debug(f"Game details: {game_details}")
+                print(f"DEBUG: Game details: {game_details}")
                 if not game_details:
                     failed_renames.append(f"{old_path.name}: Game details not found in DAT")
-                    logging.debug(f"Game details not found in database")
+                    print(f"DEBUG: Game details not found in database")
                     continue
                 
                 # Construct new filename using the DAT ROM name (which includes region info)
                 dat_rom_name = game_details.get('dat_rom_name', game_details['major_name'])
-                logging.debug(f"DAT ROM name: {dat_rom_name}")
+                print(f"DEBUG: DAT ROM name: {dat_rom_name}")
                 
                 # Remove the extension from dat_rom_name if it exists, we'll use the original file's extension
                 if '.' in dat_rom_name:
@@ -2448,54 +2240,54 @@ class MainWindow(QMainWindow):
                 else:
                     correct_name = dat_rom_name
                     
-                logging.debug(f"Correct name without extension: {correct_name}")
+                print(f"DEBUG: Correct name without extension: {correct_name}")
                 # Sanitize filename for Windows (remove invalid characters)
                 invalid_chars = '<>:"/\\|?*'
                 for char in invalid_chars:
                     correct_name = correct_name.replace(char, '_')
-                logging.debug(f"Sanitized correct name: {correct_name}")
+                print(f"DEBUG: Sanitized correct name: {correct_name}")
                 
                 # Keep the original file extension
                 new_filename = f"{correct_name}{old_path.suffix}"
                 new_path = old_path.parent / new_filename
                 
-                logging.debug(f"Attempting to rename '{old_path.name}' to '{new_filename}'")
-                logging.debug(f"Full paths - Old: {old_path}, New: {new_path}")
+                print(f"DEBUG: Attempting to rename '{old_path.name}' to '{new_filename}'")
+                print(f"DEBUG: Full paths - Old: {old_path}, New: {new_path}")
                 
                 # Check if target file already exists
                 if new_path.exists() and new_path != old_path:
                     failed_renames.append(f"{old_path.name}: Target file already exists ({new_filename})")
-                    logging.debug(f"Target file already exists: {new_path}")
+                    print(f"DEBUG: Target file already exists: {new_path}")
                     continue
                 
                 # Rename the file
-                logging.debug(f"Executing rename from {old_path} to {new_path}")
+                print(f"DEBUG: Executing rename from {old_path} to {new_path}")
                 old_path.rename(new_path)
-                logging.debug(f"File rename successful")
+                print(f"DEBUG: File rename successful")
                 
                 # Update database with new path and status
                 if hasattr(self, 'scanned_roms_manager'):
-                    logging.debug(f"Updating database - old path: {str(old_path)}, new path: {str(new_path)}")
+                    print(f"DEBUG: Updating database - old path: {str(old_path)}, new path: {str(new_path)}")
                     self.scanned_roms_manager.update_rom_path(
                         current_system_id, str(old_path), str(new_path)
                     )
-                    logging.debug(f"Database path updated")
+                    print(f"DEBUG: Database path updated")
                     self.scanned_roms_manager.update_rom_status(
                         current_system_id, str(new_path), ROMStatus.CORRECT
                     )
-                    logging.debug(f"Database status updated to CORRECT")
+                    print(f"DEBUG: Database status updated to CORRECT")
                 else:
-                    logging.debug(f"No scanned_roms_manager available")
+                    print(f"DEBUG: No scanned_roms_manager available")
                 
                 renamed_count += 1
-                logging.debug(f"Successfully renamed file {i+1}")
+                print(f"DEBUG: Successfully renamed file {i+1}")
                 
             except Exception as e:
                 error_msg = f"{Path(rom_data['file_path']).name}: {str(e)}"
                 failed_renames.append(error_msg)
-                logging.debug(f"Exception occurred: {error_msg}")
+                print(f"DEBUG: Exception occurred: {error_msg}")
                 import traceback
-                logging.debug(f"Full traceback: {traceback.format_exc()}")
+                print(f"DEBUG: Full traceback: {traceback.format_exc()}")
         
         # Show results
         message = f"Successfully renamed {renamed_count} file(s)."
@@ -2514,7 +2306,7 @@ class MainWindow(QMainWindow):
             QMessageBox.warning(self, "Rename Failed", message)
     
     def move_extra_files(self):
-        """Move extra/unrecognised files to subfolder."""
+        """Move extra/unrecognized files to subfolder."""
         if not self.current_system_id:
             QMessageBox.warning(
                 self, "No System Selected",
@@ -2522,8 +2314,8 @@ class MainWindow(QMainWindow):
             )
             return
 
-        # Get unrecognised ROMs for current system
-        unrecognised_roms = []
+        # Get unrecognized ROMs for current system
+        unrecognized_roms = []
         current_system_id = self.current_system_id
 
         if hasattr(self, 'scanned_roms_manager'):
@@ -2531,17 +2323,17 @@ class MainWindow(QMainWindow):
             scanned_roms = self.scanned_roms_manager.get_scanned_roms_by_status(
                 current_system_id, ROMStatus.NOT_RECOGNIZED
             )
-            unrecognised_roms = [rom_data['file_path'] for rom_data in scanned_roms]
+            unrecognized_roms = [rom_data['file_path'] for rom_data in scanned_roms]
         elif hasattr(self, 'current_scan_results') and self.current_scan_results:
             # Get from memory results (these should be from the current session's scan)
             for result in self.current_scan_results:
                 if result.status == ROMStatus.NOT_RECOGNIZED and result.system_id == current_system_id:
-                    unrecognised_roms.append(result.file_path)
+                    unrecognized_roms.append(result.file_path)
         
-        if not unrecognised_roms:
+        if not unrecognized_roms:
             QMessageBox.information(
-                self, "No Unrecognised ROMs",
-                "No unrecognised ROM files found for the current system. This might be because a fresh scan is needed after clearing cached data."
+                self, "No Unrecognized ROMs",
+                "No unrecognized ROM files found for the current system. This might be because a fresh scan is needed after clearing cached data."
             )
             return
 
@@ -2554,20 +2346,20 @@ class MainWindow(QMainWindow):
             )
             return
 
-        # Filter unrecognised_roms to only include files directly in a configured ROM folder
+        # Filter unrecognized_roms to only include files directly in a configured ROM folder
         system_folders_paths = [Path(folder).resolve() for folder in system_folders]
-        filtered_unrecognised_roms = []
-        for rom_path_str in unrecognised_roms:
+        filtered_unrecognized_roms = []
+        for rom_path_str in unrecognized_roms:
             rom_path = Path(rom_path_str).resolve()
             if rom_path.parent in system_folders_paths:
-                filtered_unrecognised_roms.append(rom_path_str)
+                filtered_unrecognized_roms.append(rom_path_str)
         
-        unrecognised_roms = filtered_unrecognised_roms
+        unrecognized_roms = filtered_unrecognized_roms
 
-        if not unrecognised_roms:
+        if not unrecognized_roms:
             QMessageBox.information(
-                self, "No Unrecognised ROMs",
-                "No unrecognised ROM files found in the root of the configured ROM folders for the current system after filtering."
+                self, "No Unrecognized ROMs",
+                "No unrecognized ROM files found in the root of the configured ROM folders for the current system after filtering."
             )
             return
         
@@ -2575,8 +2367,8 @@ class MainWindow(QMainWindow):
         extra_folder_name = "extra" # Define the folder name for extra files
         
         reply = QMessageBox.question(
-            self, "Move Unrecognised Files",
-            f"Move {len(unrecognised_roms)} unrecognised ROM file(s) to '{extra_folder_name}' subfolder(s)?\n\n"
+            self, "Move Unrecognized Files",
+            f"Move {len(unrecognized_roms)} unrecognized ROM file(s) to '{extra_folder_name}' subfolder(s)?\n\n"
             f"This will create an '{extra_folder_name}' folder in each ROM directory and move the files there.",
             QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No,
             QMessageBox.StandardButton.No
@@ -2588,12 +2380,12 @@ class MainWindow(QMainWindow):
         moved_files_count = 0
         failed_moves_details = []
         
-        progress_dialog = ProgressDialog("Moving unrecognised files...", self, theme=self.theme)
-        progress_dialog.progress_bar.setRange(0, len(unrecognised_roms))
+        progress_dialog = ProgressDialog("Moving unrecognized files...", self, theme=self.theme)
+        progress_dialog.progress_bar.setRange(0, len(unrecognized_roms))
         progress_dialog.setWindowModality(Qt.WindowModality.WindowModal)
         progress_dialog.progress_bar.setValue(0)
 
-        for i, file_path_str in enumerate(unrecognised_roms):
+        for i, file_path_str in enumerate(unrecognized_roms):
             if progress_dialog.cancelled:
                 break
             progress_dialog.progress_bar.setValue(i)
@@ -2604,7 +2396,7 @@ class MainWindow(QMainWindow):
             if not source_path.exists():
                 error_msg = f"{source_path.name} (File not found at: {source_path})"
                 failed_moves_details.append(error_msg)
-                logging.error(f"Error moving file: {error_msg}")
+                print(f"Error moving file: {error_msg}")
                 continue
             
             # Determine which ROM folder this file belongs to and create target dir
@@ -2647,20 +2439,20 @@ class MainWindow(QMainWindow):
                 failed_moves_details.append(error_msg)
                 print(f"Error moving file: {error_msg}")
 
-        progress_dialog.progress_bar.setValue(len(unrecognised_roms))
+        progress_dialog.progress_bar.setValue(len(unrecognized_roms))
 
-        summary_message = f"Moved {moved_files_count} unrecognised file(s) to '{extra_folder_name}' subfolder(s)."
+        summary_message = f"Moved {moved_files_count} unrecognized file(s) to '{extra_folder_name}' subfolder(s)."
         if failed_moves_details:
             summary_message += "\n\nFailed to move some files:\n" + "\n".join(failed_moves_details)
-            logging.warning("Move Complete with Errors:")
-            logging.warning(summary_message)
+            print("Move Complete with Errors:")
+            print(summary_message) # Log the full error summary to terminal
             QMessageBox.warning(self, "Move Complete with Errors", summary_message)
         else:
             QMessageBox.information(self, "Move Complete", summary_message)
         
         # After moving, rescan the system to update the lists and database
         if self.current_system_id:
-            logging.info(f"Rescanning system {self.current_system_id} after moving extra files.")
+            print(f"Rescanning system {self.current_system_id} after moving extra files.")
             self.scan_rom_folder(prompt_for_folder=False)
         
         # self.update_rom_stats() # Refresh the displayed stats - This is now handled by on_scan_finished
@@ -2774,7 +2566,7 @@ class MainWindow(QMainWindow):
                 broken_folder = rom_folder / broken_folder_name
                 try:
                     broken_folder.mkdir(exist_ok=True)
-                    logging.info(f"Created/verified broken folder: {broken_folder}")
+                    print(f"Created/verified broken folder: {broken_folder}")
                 except Exception as e:
                     failed_moves.append(f"{source_path.name} (failed to create broken folder: {e})")
                     continue
@@ -2792,10 +2584,10 @@ class MainWindow(QMainWindow):
                     counter += 1
                 
                 try:
-                    logging.info(f"Moving file from {source_path} to {dest_path}")
+                    print(f"Moving file from {source_path} to {dest_path}")
                     source_path.rename(dest_path)
                     moved_files.append(source_path.name)
-                    logging.info(f"Successfully moved: {source_path.name}")
+                    print(f"Successfully moved: {source_path.name}")
                 except Exception as e:
                     failed_moves.append(f"{source_path.name} (failed to move: {e})")
                     continue
