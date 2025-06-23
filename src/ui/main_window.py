@@ -640,62 +640,62 @@ class MainWindow(QMainWindow):
 
         logging.info(f"unignore_selected_items: Processing {len(items)} items")
         for item in items:
-            # Get the CRC32 value for this item
-            crc32 = item.text(4)
-            logging.info(f"unignore_selected_items: Processing item with CRC32: {crc32}")
-            
-            # Remove from in-memory ignored_crcs set
-            if crc32 and crc32 in self.ignored_crcs:
-                self.ignored_crcs.remove(crc32)
-                logging.info(f"unignore_selected_items: Removed {crc32} from in-memory ignored_crcs set")
+            try:
+                # Get the CRC32 value for this item
+                logging.info(f"unignore_selected_items: Item type: {type(item).__name__}")
+                logging.info(f"unignore_selected_items: Item methods: {dir(item)}")
+                logging.info(f"unignore_selected_items: Item has {item.columnCount()} columns")
                 
-                # Update the settings manager by removing this CRC
-                current_ignored = self.settings_manager.get_ignored_crcs(self.current_system_id)
-                if crc32 in current_ignored:
-                    current_ignored.remove(crc32)
-                    self.settings_manager.set_ignored_crcs(current_ignored, self.current_system_id)
-                    logging.info(f"unignore_selected_items: Updated settings manager by removing {crc32}")
-            
-            # This is a simplification. We'd need to know the original status.
-            # For now, we'll move them to unrecognized if they have a file path, and missing if they don't.
-            file_path = item.text(1)
-            logging.info(f"unignore_selected_items: Item file_path: '{file_path}'")
-            if file_path:
-                logging.info(f"unignore_selected_items: Updating ROM status to NOT_RECOGNIZED for file_path: {file_path}")
-                self.scanned_roms_manager.update_rom_status(
-                    self.current_system_id,
-                    ROMStatus.NOT_RECOGNIZED,
-                    file_path=file_path
-                )
-            else:
-                logging.info(f"unignore_selected_items: No file_path, handling as missing ROM with CRC32: {crc32}")
-                # For missing ROMs, we need to check if they exist in the database
-                # If not, we need to insert them first
-                rom_data = self.scanned_roms_manager.get_rom_by_crc32(self.current_system_id, crc32)
-                if not rom_data:
-                    logging.info(f"unignore_selected_items: ROM with CRC32 {crc32} not found in database, inserting as missing")
-                    # Find game data if available
-                    game_data = None
-                    for game in self.all_games:
-                        if game.get('crc32') == crc32:
-                            game_data = game
-                            logging.info(f"unignore_selected_items: Found game data for CRC32 {crc32}: {game.get('major_name')}")
-                            break
+                # Log all column values
+                for i in range(item.columnCount()):
+                    logging.info(f"unignore_selected_items: Column {i}: {item.text(i)}")
+                
+                # Try to get CRC32 from column 5
+                crc32 = item.text(5) if item.columnCount() > 5 else None
+                logging.info(f"unignore_selected_items: Extracted CRC32: {crc32}")
+                
+                if not crc32 or crc32.strip() == "":
+                    logging.error("unignore_selected_items: CRC32 is empty or None")
+                    continue
+                
+                # Remove from in-memory ignored_crcs set
+                if crc32 in self.ignored_crcs:
+                    self.ignored_crcs.remove(crc32)
+                    logging.info(f"unignore_selected_items: Removed {crc32} from in-memory ignored_crcs set")
                     
-                    # Insert the missing ROM into the database
-                    self.scanned_roms_manager.insert_missing_rom(
-                        self.current_system_id,
-                        crc32,
-                        game_data
-                    )
+                    # Update the settings manager by removing this CRC
+                    current_ignored = self.settings_manager.get_ignored_crcs(self.current_system_id)
+                    if crc32 in current_ignored:
+                        current_ignored.remove(crc32)
+                        self.settings_manager.set_ignored_crcs(current_ignored, self.current_system_id)
+                        logging.info(f"unignore_selected_items: Updated settings manager by removing {crc32}")
                 else:
-                    logging.info(f"unignore_selected_items: ROM with CRC32 {crc32} found in database, updating status to MISSING")
-                    # If it exists, just update its status
+                    logging.warning(f"unignore_selected_items: CRC32 {crc32} not found in ignored_crcs set")
+                
+                # Get the original status from the database
+                rom_data = self.scanned_roms_manager.get_rom_by_crc32(self.current_system_id, crc32)
+                logging.info(f"unignore_selected_items: ROM data from database: {rom_data}")
+                
+                if not rom_data:
+                    logging.error(f"unignore_selected_items: No ROM data found for CRC32 {crc32}")
+                    continue
+                    
+                original_status = ROMStatus(rom_data['original_status']) if rom_data.get('original_status') else ROMStatus.NOT_RECOGNIZED
+                logging.info(f"unignore_selected_items: Restoring to original_status: {original_status.value}")
+
+                # Restore the ROM to its original status
+                try:
                     self.scanned_roms_manager.update_rom_status(
-                        self.current_system_id,
-                        ROMStatus.MISSING,
-                        crc32=crc32
+                        system_id=self.current_system_id,
+                        new_status=original_status,
+                        crc32=crc32,
+                        original_status=None  # Clear the original_status
                     )
+                    logging.info(f"unignore_selected_items: Successfully updated ROM status for CRC32 {crc32}")
+                except Exception as e:
+                    logging.error(f"unignore_selected_items: Error updating ROM status: {str(e)}")
+            except Exception as e:
+                logging.error(f"unignore_selected_items: Unexpected error processing item: {str(e)}")
 
         logging.info("unignore_selected_items: Refreshing ROM lists")
         self.load_dat_games()
@@ -756,19 +756,15 @@ class MainWindow(QMainWindow):
 
     def populate_ignored_tree(self):
         """Populate the ignored ROMs tree based on self.ignored_crcs."""
-        print(f"DEBUG: populate_ignored_tree called with {len(self.ignored_crcs)} ignored CRCs")
         self.ignored_tree.clear()
         if not self.ignored_crcs:
-            print("DEBUG: No ignored CRCs, returning early")
             return
 
         row_number = 0
         # First try to find games in the all_games list (for DAT games)
         for crc in self.ignored_crcs:
-            print(f"DEBUG: Processing CRC {crc}")
             game_details = next((g for g in self.all_games if g.get('crc32') == crc), None) if self.all_games else None
             if game_details:
-                print(f"DEBUG: Found DAT game: {game_details['major_name']}")
                 row_number += 1
                 
                 # Get original_status to display in the title
@@ -799,31 +795,22 @@ class MainWindow(QMainWindow):
                 
                 # Apply color coding based on original_status
                 if original_status:
-                    print(f"DEBUG: DAT game original_status: '{original_status}'")
                     if original_status == 'missing':
-                        print(f"DEBUG: Applying YELLOW color to DAT game {game_details['major_name']}")
                         # Yellow for items moved from Missing
                         for col in range(item.columnCount()):
                             item.setForeground(col, QColor('#f2d712'))
                     elif original_status == 'not_recognized':
-                        print(f"DEBUG: Applying ORANGE color to DAT game {game_details['major_name']}")
                         # Orange for items moved from Unrecognised
                         for col in range(item.columnCount()):
                             item.setForeground(col, QColor('#ff993c'))
-                    else:
-                        print(f"DEBUG: No color applied to DAT game, original_status: '{original_status}'")
-                else:
-                    print(f"DEBUG: No ROM data found for DAT game {game_details['major_name']}")
                 
                 self.ignored_tree.addTopLevelItem(item)
             else:
-                print(f"DEBUG: CRC {crc} not found in DAT, checking database")
                 # For unrecognised ROMs that aren't in the DAT, get them from the database
                 if hasattr(self, 'scanned_roms_manager'):
                     # Try to find the ROM in the database
                     rom_data = self.scanned_roms_manager.get_rom_by_crc32(self.current_system_id, crc)
                     if rom_data:
-                        print(f"DEBUG: Found unrecognised ROM in database: {rom_data}")
                         row_number += 1
                         filename = Path(rom_data['file_path']).name if 'file_path' in rom_data else 'Unknown'
                         
@@ -848,25 +835,16 @@ class MainWindow(QMainWindow):
                         item.setData(0, Qt.ItemDataRole.UserRole, row_number) # For sorting
                         
                         # Apply color coding based on original_status
-                        print(f"DEBUG: Unrecognised ROM original_status: '{original_status}'")
                         if original_status == 'missing':
-                            print(f"DEBUG: Applying YELLOW color to unrecognised ROM {filename}")
                             # Yellow for items moved from Missing
                             for col in range(item.columnCount()):
                                 item.setForeground(col, QColor('#f2d712'))
                         elif original_status == 'not_recognized':
-                            print(f"DEBUG: Applying ORANGE color to unrecognised ROM {filename}")
                             # Orange for items moved from Unrecognised
                             for col in range(item.columnCount()):
                                 item.setForeground(col, QColor('#ff993c'))
-                        else:
-                            print(f"DEBUG: No color applied to unrecognised ROM, original_status: '{original_status}'")
                         
                         self.ignored_tree.addTopLevelItem(item)
-                    else:
-                        print(f"DEBUG: No ROM data found in database for CRC {crc}")
-
-        print(f"DEBUG: populate_ignored_tree finished, added {self.ignored_tree.topLevelItemCount()} items")
         self.ignored_tree.sortItems(0, Qt.SortOrder.AscendingOrder)
 
     def create_bottom_panel(self) -> QWidget:
@@ -2487,7 +2465,9 @@ class MainWindow(QMainWindow):
                     )
                     logging.debug(f"Database path updated")
                     self.scanned_roms_manager.update_rom_status(
-                        current_system_id, str(new_path), ROMStatus.CORRECT
+                        system_id=current_system_id,
+                        new_status=ROMStatus.CORRECT,
+                        file_path=str(new_path)
                     )
                     logging.debug(f"Database status updated to CORRECT")
                 else:
@@ -2645,7 +2625,11 @@ class MainWindow(QMainWindow):
                 moved_files_count += 1
                 # Optionally, update status in DB or internal lists if needed
                 if hasattr(self, 'scanned_roms_manager'):
-                    self.scanned_roms_manager.update_rom_status(self.current_system_id, str(source_path), ROMStatus.MOVED_EXTRA)
+                    self.scanned_roms_manager.update_rom_status(
+                        system_id=self.current_system_id,
+                        new_status=ROMStatus.MOVED_EXTRA,
+                        file_path=str(source_path)
+                    )
                     self.scanned_roms_manager.update_rom_path(str(self.current_system_id), str(source_path), str(target_file_path))
 
             except Exception as e:
