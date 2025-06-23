@@ -695,11 +695,9 @@ class MainWindow(QMainWindow):
                     )
 
         logging.info("unignore_selected_items: Refreshing ROM lists")
-        # Refresh the ROM lists
+        self.load_dat_games()
         self.update_rom_lists()
 
-        # Refresh the ROM lists
-        self.update_rom_lists()
                 
     def update_tab_styles(self, index=None):
         """Update tab styles using direct QTabBar methods."""
@@ -1621,6 +1619,7 @@ class MainWindow(QMainWindow):
     
     def update_missing_roms(self):
         """Update the missing ROMs tab with games that are in the DAT but not found in the scan."""
+        logging.info(f"update_missing_roms: Current ignored_crcs: {self.ignored_crcs}")
         if not hasattr(self, 'all_games') or not self.all_games:
             logging.info("update_missing_roms: No all_games attribute or empty all_games")
             return
@@ -1663,6 +1662,7 @@ class MainWindow(QMainWindow):
         
         logging.info(f"update_missing_roms: Found {len(visible_games)} visible games in DAT tree")
         logging.info(f"update_missing_roms: Ignored CRCs count: {len(self.ignored_crcs)}")
+        logging.info(f"update_missing_roms: Ignored CRCs: {self.ignored_crcs}")
         
         # Iterate through games currently visible in the DAT tree
         # and check if they are missing from the scan results AND not in the ignore list.

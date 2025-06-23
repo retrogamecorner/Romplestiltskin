@@ -6,6 +6,7 @@ Handles loading and saving user settings from/to JSON configuration file.
 """
 
 import json
+import logging
 import os
 from pathlib import Path
 from typing import Dict, Any, Optional
@@ -86,8 +87,8 @@ class SettingsManager:
                     # Merge with defaults to handle new settings
                     self.settings.update(loaded_settings)
         except (json.JSONDecodeError, IOError) as e:
-            print(f"Warning: Could not load settings from {self.config_file}: {e}")
-            print("Using default settings.")
+            logging.warning(f"Could not load settings from {self.config_file}: {e}")
+            logging.warning("Using default settings.")
     
     def save_settings(self) -> None:
         """Save current settings to configuration file."""
@@ -98,7 +99,7 @@ class SettingsManager:
             with open(self.config_file, 'w', encoding='utf-8') as f:
                 json.dump(self.settings, f, indent=4, ensure_ascii=False)
         except Exception as e:
-            print(f"Error saving settings: {e}")
+            logging.error(f"Error saving settings: {e}")
     
     def get_system_filter_settings(self, system_id: str) -> dict:
         """Get filter settings for a specific system."""
@@ -111,36 +112,36 @@ class SettingsManager:
 
     def get_ignored_crcs(self, system_id: Optional[str] = None) -> list:
         """Get the list of ignored CRCs, optionally for a specific system."""
-        print(f"get_ignored_crcs: Called with system_id={system_id}")
+        logging.debug(f"get_ignored_crcs: Called with system_id={system_id}")
         if system_id:
             # This allows for system-specific ignore lists in the future if needed
             # For now, we'll use a global list but structure allows extension
             system_ignores = self.get(f"system_ignored_crcs.{system_id}", [])
-            print(f"get_ignored_crcs: System-specific ignores for {system_id}: {system_ignores}")
+            logging.debug(f"get_ignored_crcs: System-specific ignores for {system_id}: {system_ignores}")
             if system_ignores: # If system specific list exists and is not empty
                 return system_ignores
         global_ignores = self.get("ignored_crcs", [])
-        print(f"get_ignored_crcs: Global ignores: {global_ignores}")
+        logging.debug(f"get_ignored_crcs: Global ignores: {global_ignores}")
         return global_ignores
 
     def set_ignored_crcs(self, crc_list: list, system_id: Optional[str] = None) -> None:
         """Set the list of ignored CRCs, optionally for a specific system."""
-        print(f"set_ignored_crcs: Called with system_id={system_id}, crc_list={crc_list}")
+        logging.debug(f"set_ignored_crcs: Called with system_id={system_id}, crc_list={crc_list}")
         if system_id:
-            print(f"set_ignored_crcs: Setting system-specific ignores for {system_id}")
+            logging.debug(f"set_ignored_crcs: Setting system-specific ignores for {system_id}")
             self.set(f"system_ignored_crcs.{system_id}", crc_list)
         else:
-            print(f"set_ignored_crcs: Setting global ignores")
+            logging.debug(f"set_ignored_crcs: Setting global ignores")
             self.set("ignored_crcs", crc_list)
         self.save_settings()  # Save settings after modification
-        print(f"set_ignored_crcs: Settings saved")
+        logging.debug(f"set_ignored_crcs: Settings saved")
         
         # Verify the settings were saved correctly
         if system_id:
             saved_list = self.get(f"system_ignored_crcs.{system_id}", [])
         else:
             saved_list = self.get("ignored_crcs", [])
-        print(f"set_ignored_crcs: Verified saved list: {saved_list}")
+        logging.debug(f"set_ignored_crcs: Verified saved list: {saved_list}")
     
     def set_system_filter_settings(self, system_id: str, filter_settings: dict) -> None:
         """Set filter settings for a specific system."""
