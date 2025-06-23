@@ -520,10 +520,12 @@ class MainWindow(QMainWindow):
         for item in items:
             if original_status == ROMStatus.MISSING:
                 crc32 = item.text(4)  # Assuming CRC32 is in the fifth column
-                self.scanned_roms_manager.update_rom_status(
+                # For missing ROMs, we need to add a new entry to the database
+                self.scanned_roms_manager.add_rom(
                     self.current_system_id,
-                    ROMStatus.IGNORED,
-                    crc32=crc32
+                    status=ROMStatus.IGNORED,
+                    crc32=crc32,
+                    original_status=original_status
                 )
                 # Add to in-memory ignored_crcs set
                 if crc32:
@@ -538,8 +540,8 @@ class MainWindow(QMainWindow):
             else:
                 # Handle different column structures based on the original status
                 if original_status == ROMStatus.NOT_RECOGNIZED:
-                    # For unrecognized ROMs, CRC32 is in column 2
-                    file_path = item.text(1)  # Filename is in the second column
+                    # For unrecognized ROMs, get the full path from UserRole
+                    file_path = item.data(1, Qt.ItemDataRole.UserRole)
                     crc32 = item.text(2) if item.columnCount() > 2 else None  # CRC32 is in the third column
                     
                     # Debug print to check values
@@ -554,7 +556,8 @@ class MainWindow(QMainWindow):
                     self.current_system_id,
                     ROMStatus.IGNORED,
                     file_path=file_path,
-                    crc32=crc32
+                    crc32=crc32,
+                    original_status=original_status
                 )
                 logging.info(f"Updated ROM status to IGNORED for {file_path} with CRC32: {crc32}")
                 
@@ -753,58 +756,105 @@ class MainWindow(QMainWindow):
 
     def populate_ignored_tree(self):
         """Populate the ignored ROMs tree based on self.ignored_crcs."""
-        logging.info(f"populate_ignored_tree: Starting with {len(self.ignored_crcs)} ignored CRCs")
+        print(f"DEBUG: populate_ignored_tree called with {len(self.ignored_crcs)} ignored CRCs")
         self.ignored_tree.clear()
         if not self.ignored_crcs:
-            logging.info("populate_ignored_tree: No ignored CRCs, returning")
+            print("DEBUG: No ignored CRCs, returning early")
             return
 
-        logging.info(f"populate_ignored_tree: Ignored CRCs: {self.ignored_crcs}")
         row_number = 0
         # First try to find games in the all_games list (for DAT games)
         for crc in self.ignored_crcs:
-            logging.info(f"populate_ignored_tree: Processing CRC32: {crc}")
+            print(f"DEBUG: Processing CRC {crc}")
             game_details = next((g for g in self.all_games if g.get('crc32') == crc), None) if self.all_games else None
             if game_details:
-                logging.info(f"populate_ignored_tree: Found game in DAT: {game_details['major_name']}")
+                print(f"DEBUG: Found DAT game: {game_details['major_name']}")
                 row_number += 1
+                
+                # Get original_status to display in the title
+                original_status = None
+                if hasattr(self, 'scanned_roms_manager'):
+                    rom_data = self.scanned_roms_manager.get_rom_by_crc32(self.current_system_id, crc)
+                    if rom_data:
+                        original_status = rom_data.get('original_status')
+                
+                # Create display name with original_status
+                display_name = game_details['major_name']
+                
                 item = NumericTreeWidgetItem([
                     str(row_number),
-                    game_details['major_name'],
+                    display_name,
+                    original_status if original_status else '',
                     game_details.get('region', ''),
                     game_details.get('languages', ''),
                     game_details['crc32']
                 ])
                 item.setData(0, Qt.ItemDataRole.UserRole, row_number) # For sorting
+                
+                # Apply color coding based on original_status
+                if original_status:
+                    print(f"DEBUG: DAT game original_status: '{original_status}'")
+                    if original_status == 'missing':
+                        print(f"DEBUG: Applying YELLOW color to DAT game {game_details['major_name']}")
+                        # Yellow for items moved from Missing
+                        for col in range(item.columnCount()):
+                            item.setForeground(col, QColor('#f2d712'))
+                    elif original_status == 'not_recognized':
+                        print(f"DEBUG: Applying ORANGE color to DAT game {game_details['major_name']}")
+                        # Orange for items moved from Unrecognized
+                        for col in range(item.columnCount()):
+                            item.setForeground(col, QColor('#ff993c'))
+                    else:
+                        print(f"DEBUG: No color applied to DAT game, original_status: '{original_status}'")
+                else:
+                    print(f"DEBUG: No ROM data found for DAT game {game_details['major_name']}")
+                
                 self.ignored_tree.addTopLevelItem(item)
-                logging.info(f"populate_ignored_tree: Added DAT game to ignored tree: {game_details['major_name']}, CRC32: {crc}")
             else:
-                logging.info(f"populate_ignored_tree: CRC32 {crc} not found in DAT, checking database")
+                print(f"DEBUG: CRC {crc} not found in DAT, checking database")
                 # For unrecognized ROMs that aren't in the DAT, get them from the database
                 if hasattr(self, 'scanned_roms_manager'):
                     # Try to find the ROM in the database
                     rom_data = self.scanned_roms_manager.get_rom_by_crc32(self.current_system_id, crc)
                     if rom_data:
-                        logging.info(f"populate_ignored_tree: Found ROM in database: {rom_data}")
+                        print(f"DEBUG: Found unrecognized ROM in database: {rom_data}")
                         row_number += 1
                         filename = Path(rom_data['file_path']).name if 'file_path' in rom_data else 'Unknown'
+                        
+                        # Get original_status and add to display name
+                        original_status = rom_data.get('original_status')
+                        display_filename = filename
+                        
                         item = NumericTreeWidgetItem([
                             str(row_number),
-                            filename,  # Use filename as the name
+                            display_filename,  # Use filename with original_status as the name
+                            original_status if original_status else '',
                             '',  # No region for unrecognized ROMs
                             '',  # No languages for unrecognized ROMs
                             crc
                         ])
                         item.setData(0, Qt.ItemDataRole.UserRole, row_number) # For sorting
+                        
+                        # Apply color coding based on original_status
+                        print(f"DEBUG: Unrecognized ROM original_status: '{original_status}'")
+                        if original_status == 'missing':
+                            print(f"DEBUG: Applying YELLOW color to unrecognized ROM {filename}")
+                            # Yellow for items moved from Missing
+                            for col in range(item.columnCount()):
+                                item.setForeground(col, QColor('#f2d712'))
+                        elif original_status == 'not_recognized':
+                            print(f"DEBUG: Applying ORANGE color to unrecognized ROM {filename}")
+                            # Orange for items moved from Unrecognized
+                            for col in range(item.columnCount()):
+                                item.setForeground(col, QColor('#ff993c'))
+                        else:
+                            print(f"DEBUG: No color applied to unrecognized ROM, original_status: '{original_status}'")
+                        
                         self.ignored_tree.addTopLevelItem(item)
-                        logging.info(f"populate_ignored_tree: Added unrecognized ROM to ignored tree: {filename}, CRC32: {crc}")
                     else:
-                        logging.info(f"populate_ignored_tree: Could not find ROM with CRC32: {crc} in database")
-                else:
-                    logging.info(f"populate_ignored_tree: No scanned_roms_manager available to check database for CRC32: {crc}")
-        
-        logging.info(f"populate_ignored_tree: Finished with {self.ignored_tree.topLevelItemCount()} items added to tree")
+                        print(f"DEBUG: No ROM data found in database for CRC {crc}")
 
+        print(f"DEBUG: populate_ignored_tree finished, added {self.ignored_tree.topLevelItemCount()} items")
         self.ignored_tree.sortItems(0, Qt.SortOrder.AscendingOrder)
 
     def create_bottom_panel(self) -> QWidget:
@@ -1917,6 +1967,8 @@ class MainWindow(QMainWindow):
                 ])
                 # Store numeric value for proper sorting
                 item.setData(0, Qt.ItemDataRole.UserRole, row_number)
+                # Store the full file path in a custom role
+                item.setData(1, Qt.ItemDataRole.UserRole, rom_data['file_path'])
                 self.unrecognized_tree.addTopLevelItem(item)
         elif results:
             # Fallback to memory results

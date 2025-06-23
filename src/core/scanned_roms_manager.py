@@ -41,12 +41,21 @@ class ScannedROMsManager:
                     matched_game_id INTEGER,
                     similarity_score REAL,
                     error_message TEXT,
+                    original_status TEXT,
                     scan_timestamp TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
                     FOREIGN KEY (system_id) REFERENCES systems (id) ON DELETE CASCADE,
                     FOREIGN KEY (matched_game_id) REFERENCES games (id) ON DELETE SET NULL,
                     UNIQUE(system_id, file_path)
                 )
             """)
+            
+            # Add original_status column if it doesn't exist (for existing databases)
+            try:
+                cursor.execute("ALTER TABLE scanned_roms ADD COLUMN original_status TEXT")
+                conn.commit()
+            except sqlite3.OperationalError:
+                # Column already exists
+                pass
             
             # Create indexes for better performance
             cursor.execute("""
@@ -61,7 +70,7 @@ class ScannedROMsManager:
             
             conn.commit()
 
-    def update_rom_status(self, system_id: int, new_status: ROMStatus, file_path: Optional[str] = None, crc32: Optional[str] = None):
+    def update_rom_status(self, system_id: int, new_status: ROMStatus, file_path: Optional[str] = None, crc32: Optional[str] = None, original_status: Optional[ROMStatus] = None):
         """Update the status of a specific ROM file using file_path or crc32.
 
         Args:
@@ -69,6 +78,7 @@ class ScannedROMsManager:
             new_status: The new ROMStatus for the file
             file_path: Path to the ROM file (optional)
             crc32: CRC32 of the ROM file (optional)
+            original_status: The original status before changing to ignored (optional)
         """
         print(f"update_rom_status: Called with system_id={system_id}, new_status={new_status}, file_path={file_path}, crc32={crc32}")
         if not file_path and not crc32:
@@ -78,22 +88,40 @@ class ScannedROMsManager:
         with self.get_connection() as conn:
             cursor = conn.cursor()
             if file_path:
-                query = """
-                    UPDATE scanned_roms
-                    SET status = ?
-                    WHERE system_id = ? AND file_path = ?
-                """
-                print(f"update_rom_status: Executing query by file_path: {query} with params: ({new_status.value}, {system_id}, {file_path})")
-                cursor.execute(query, (new_status.value, system_id, file_path))
+                if original_status:
+                    query = """
+                        UPDATE scanned_roms
+                        SET status = ?, original_status = ?
+                        WHERE system_id = ? AND file_path = ?
+                    """
+                    print(f"update_rom_status: Executing query by file_path: {query} with params: ({new_status.value}, {original_status.value}, {system_id}, {file_path})")
+                    cursor.execute(query, (new_status.value, original_status.value, system_id, file_path))
+                else:
+                    query = """
+                        UPDATE scanned_roms
+                        SET status = ?
+                        WHERE system_id = ? AND file_path = ?
+                    """
+                    print(f"update_rom_status: Executing query by file_path: {query} with params: ({new_status.value}, {system_id}, {file_path})")
+                    cursor.execute(query, (new_status.value, system_id, file_path))
                 print(f"update_rom_status: Rows affected: {cursor.rowcount}")
             elif crc32:
-                query = """
-                    UPDATE scanned_roms
-                    SET status = ?
-                    WHERE system_id = ? AND calculated_crc32 = ?
-                """
-                print(f"update_rom_status: Executing query by crc32: {query} with params: ({new_status.value}, {system_id}, {crc32})")
-                cursor.execute(query, (new_status.value, system_id, crc32))
+                if original_status:
+                    query = """
+                        UPDATE scanned_roms
+                        SET status = ?, original_status = ?
+                        WHERE system_id = ? AND calculated_crc32 = ?
+                    """
+                    print(f"update_rom_status: Executing query by crc32: {query} with params: ({new_status.value}, {original_status.value}, {system_id}, {crc32})")
+                    cursor.execute(query, (new_status.value, original_status.value, system_id, crc32))
+                else:
+                    query = """
+                        UPDATE scanned_roms
+                        SET status = ?
+                        WHERE system_id = ? AND calculated_crc32 = ?
+                    """
+                    print(f"update_rom_status: Executing query by crc32: {query} with params: ({new_status.value}, {system_id}, {crc32})")
+                    cursor.execute(query, (new_status.value, system_id, crc32))
                 print(f"update_rom_status: Rows affected: {cursor.rowcount}")
             conn.commit()
             print(f"update_rom_status: Changes committed to database")
@@ -115,6 +143,29 @@ class ScannedROMsManager:
             """, (new_file_path, system_id, old_file_path))
             conn.commit()
     
+    def add_rom(self, system_id: int, status: ROMStatus, file_path: Optional[str] = None, file_size: Optional[int] = None, crc32: Optional[str] = None, original_status: Optional[ROMStatus] = None):
+        """Add a new ROM entry, typically for missing or ignored ROMs."""
+        with self.get_connection() as conn:
+            cursor = conn.cursor()
+            query = """
+                INSERT INTO scanned_roms (system_id, file_path, file_size, calculated_crc32, status, original_status)
+                VALUES (?, ?, ?, ?, ?, ?)
+            """
+            # Use placeholder for file_path if not provided, to satisfy NOT NULL constraint
+            final_file_path = file_path if file_path is not None else f"missing_{crc32}"
+            final_file_size = file_size if file_size is not None else 0
+            
+            params = (
+                system_id,
+                final_file_path,
+                final_file_size,
+                crc32,
+                status.value,
+                original_status.value if original_status else None
+            )
+            cursor.execute(query, params)
+            conn.commit()
+
     @contextmanager
     def get_connection(self):
         """Get database connection with automatic cleanup.
@@ -198,6 +249,18 @@ class ScannedROMsManager:
             """, (system_id, status.value))
             
             return [dict(row) for row in cursor.fetchall()]
+
+    def get_rom_by_crc32(self, system_id: int, crc32: str) -> Optional[Dict[str, Any]]:
+        """Get a single ROM record by its CRC32."""
+        with self.get_connection() as conn:
+            cursor = conn.cursor()
+            cursor.execute("""
+                SELECT *
+                FROM scanned_roms
+                WHERE system_id = ? AND calculated_crc32 = ?
+            """, (system_id, crc32))
+            row = cursor.fetchone()
+            return dict(row) if row else None
     
     def get_all_scanned_roms(self, system_id: int) -> List[Dict[str, Any]]:
         """Get all scanned ROMs for a specific system.
