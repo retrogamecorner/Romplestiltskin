@@ -92,12 +92,14 @@ class SettingsManager:
     
     def save_settings(self) -> None:
         """Save current settings to configuration file."""
+        logging.info(f"Saving settings to {self.config_file}")
         try:
             # Ensure the config directory exists
             self.config_file.parent.mkdir(parents=True, exist_ok=True)
             
             with open(self.config_file, 'w', encoding='utf-8') as f:
                 json.dump(self.settings, f, indent=4, ensure_ascii=False)
+            logging.info("Settings saved successfully.")
         except Exception as e:
             logging.error(f"Error saving settings: {e}")
     
@@ -112,36 +114,28 @@ class SettingsManager:
 
     def get_ignored_crcs(self, system_id: Optional[str] = None) -> list:
         """Get the list of ignored CRCs, optionally for a specific system."""
-        logging.debug(f"get_ignored_crcs: Called with system_id={system_id}")
         if system_id:
-            # This allows for system-specific ignore lists in the future if needed
-            # For now, we'll use a global list but structure allows extension
-            system_ignores = self.get(f"system_ignored_crcs.{system_id}", [])
-            logging.debug(f"get_ignored_crcs: System-specific ignores for {system_id}: {system_ignores}")
-            if system_ignores: # If system specific list exists and is not empty
-                return system_ignores
-        global_ignores = self.get("ignored_crcs", [])
-        logging.debug(f"get_ignored_crcs: Global ignores: {global_ignores}")
-        return global_ignores
+            system_ignores = self.get("system_ignored_crcs", {})
+            return system_ignores.get(str(system_id), [])
+        # Fallback to global list if no system-specific list is found
+        return self.get("ignored_crcs", [])
 
     def set_ignored_crcs(self, crc_list: list, system_id: Optional[str] = None) -> None:
         """Set the list of ignored CRCs, optionally for a specific system."""
-        logging.debug(f"set_ignored_crcs: Called with system_id={system_id}, crc_list={crc_list}")
+        logging.info(f"Setting ignored CRCs for system {system_id}. List: {crc_list}")
         if system_id:
-            logging.debug(f"set_ignored_crcs: Setting system-specific ignores for {system_id}")
-            self.set(f"system_ignored_crcs.{system_id}", crc_list)
+            system_ignores = self.get("system_ignored_crcs", {})
+            if crc_list:
+                system_ignores[str(system_id)] = crc_list
+                self.set("system_ignored_crcs", system_ignores)
+            else:
+                # If the list is empty, remove the system-specific key
+                if str(system_id) in system_ignores:
+                    del system_ignores[str(system_id)]
+                    self.set("system_ignored_crcs", system_ignores)
         else:
-            logging.debug(f"set_ignored_crcs: Setting global ignores")
             self.set("ignored_crcs", crc_list)
         self.save_settings()  # Save settings after modification
-        logging.debug(f"set_ignored_crcs: Settings saved")
-        
-        # Verify the settings were saved correctly
-        if system_id:
-            saved_list = self.get(f"system_ignored_crcs.{system_id}", [])
-        else:
-            saved_list = self.get("ignored_crcs", [])
-        logging.debug(f"set_ignored_crcs: Verified saved list: {saved_list}")
     
     def set_system_filter_settings(self, system_id: str, filter_settings: dict) -> None:
         """Set filter settings for a specific system."""
@@ -189,6 +183,23 @@ class SettingsManager:
         
         # Set the final value
         setting_dict[keys[-1]] = value
+
+    def delete(self, key: str) -> None:
+        """Delete a setting value.
+        
+        Args:
+            key: Setting key (supports dot notation for nested keys)
+        """
+        keys = key.split('.')
+        d = self.settings
+        for k in keys[:-1]:
+            if not isinstance(d, dict) or k not in d:
+                # Path does not exist
+                return
+            d = d[k]
+        
+        if isinstance(d, dict) and keys[-1] in d:
+            del d[keys[-1]]
     
     def get_dat_folder_path(self) -> str:
         """Get DAT folder path."""

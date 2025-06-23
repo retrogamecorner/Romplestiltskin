@@ -190,6 +190,21 @@ class ScannedROMsManager:
             cursor = conn.cursor()
             cursor.execute("DELETE FROM scanned_roms WHERE system_id = ?", (system_id,))
             conn.commit()
+
+    def delete_rom_by_crc(self, system_id: int, crc32: str):
+        """Delete a specific ROM entry by its CRC32.
+
+        Args:
+            system_id: ID of the system
+            crc32: CRC32 of the ROM to delete
+        """
+        with self.get_connection() as conn:
+            cursor = conn.cursor()
+            cursor.execute("""
+                DELETE FROM scanned_roms
+                WHERE system_id = ? AND calculated_crc32 = ?
+            """, (system_id, crc32))
+            conn.commit()
     
     def store_scan_results(self, system_id: int, results: List[ROMScanResult]):
         """Store scan results in the database.
