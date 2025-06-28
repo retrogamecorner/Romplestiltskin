@@ -7,7 +7,7 @@ Manages persistent storage of scanned ROM data to enable filtering across all RO
 
 import sqlite3
 from pathlib import Path
-from typing import List, Dict, Any, Optional
+from typing import List, Dict, Any, Optional, Set
 from contextlib import contextmanager
 from .rom_scanner import ROMScanResult, ROMStatus
 
@@ -125,6 +125,7 @@ class ScannedROMsManager:
                 print(f"update_rom_status: Rows affected: {cursor.rowcount}")
             conn.commit()
             print(f"update_rom_status: Changes committed to database")
+            return cursor.rowcount
 
     def update_rom_path(self, system_id: int, old_file_path: str, new_file_path: str):
         """Update the file path of a specific ROM file.
@@ -213,18 +214,32 @@ class ScannedROMsManager:
             system_id: ID of the system being scanned
             results: List of scan results to store
         """
-        # First clear existing scans for this system
-        self.clear_system_scans(system_id)
-        
         with self.get_connection() as conn:
             cursor = conn.cursor()
-            
+
+            # Get all existing CRCs for the system that are marked as IGNORED
+            cursor.execute("""
+                SELECT calculated_crc32 FROM scanned_roms
+                WHERE system_id = ? AND status = ?
+            """, (system_id, ROMStatus.IGNORED.value))
+            ignored_crcs = {row['calculated_crc32'] for row in cursor.fetchall()}
+
+            # First, clear existing non-ignored scans for this system
+            cursor.execute("""
+                DELETE FROM scanned_roms
+                WHERE system_id = ? AND status != ?
+            """, (system_id, ROMStatus.IGNORED.value))
+
             for result in results:
+                # If the CRC is in the ignored list, skip it
+                if result.calculated_crc32 in ignored_crcs:
+                    continue
+
                 # Get matched game ID if available
                 matched_game_id = None
                 if result.matched_game and 'id' in result.matched_game:
                     matched_game_id = result.matched_game['id']
-                
+
                 cursor.execute("""
                     INSERT OR REPLACE INTO scanned_roms (
                         system_id, file_path, file_size, calculated_crc32, status,
@@ -240,7 +255,7 @@ class ScannedROMsManager:
                     getattr(result, 'similarity_score', None),
                     getattr(result, 'error_message', None)
                 ))
-            
+
             conn.commit()
     
     def get_scanned_roms_by_status(self, system_id: int, status: ROMStatus) -> List[Dict[str, Any]]:
@@ -264,6 +279,18 @@ class ScannedROMsManager:
             """, (system_id, status.value))
             
             return [dict(row) for row in cursor.fetchall()]
+
+    def get_rom_by_file_path(self, system_id: int, file_path: str) -> Optional[Dict[str, Any]]:
+        """Get a single ROM record by its file_path."""
+        with self.get_connection() as conn:
+            cursor = conn.cursor()
+            cursor.execute("""
+                SELECT *
+                FROM scanned_roms
+                WHERE system_id = ? AND file_path = ?
+            """, (system_id, file_path))
+            row = cursor.fetchone()
+            return dict(row) if row else None
 
     def get_rom_by_crc32(self, system_id: int, crc32: str) -> Optional[Dict[str, Any]]:
         """Get a single ROM record by its CRC32."""

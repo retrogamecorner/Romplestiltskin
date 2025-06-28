@@ -6,7 +6,6 @@ Handles loading and saving user settings from/to JSON configuration file.
 """
 
 import json
-import logging
 import os
 from pathlib import Path
 from typing import Dict, Any, Optional
@@ -45,14 +44,15 @@ class SettingsManager:
             "filtered_folder_name": "_filtered",
             "multi_disc_folder_name": "_multi",
             "region_priority": [
-                # Top priority regions in specified order
-                "USA", "Japan", "Europe", "World", "UK",
-                # Other regions in alphabetical order
-                "Australia", "Austria", "Belgium", "Bulgaria", "Canada", "Croatia", 
-                "Cyprus", "Czech Republic", "Denmark", "Estonia", "Finland", "France", 
-                "Germany", "Greece", "Hungary", "Ireland", "Italy", "Latvia", 
-                "Lithuania", "Luxembourg", "Malta", "Netherlands", "Poland", 
-                "Portugal", "Romania", "Slovakia", "Slovenia", "Spain", "Sweden"
+                "USA", "Japan", "Europe", "World",
+                # EU Countries
+                "Austria", "Belgium", "Bulgaria", "Croatia", "Cyprus", "Czech Republic",
+                "Denmark", "Estonia", "Finland", "France", "Germany", "Greece",
+                "Hungary", "Ireland", "Italy", "Latvia", "Lithuania", "Luxembourg",
+                "Malta", "Netherlands", "Poland", "Portugal", "Romania", "Slovakia",
+                "Slovenia", "Spain", "Sweden",
+                # Other priority countries
+                "Canada", "Australia"
             ],
             "language_priority": ["En", "Es", "Fr", "De", "It", "Pt", "Ja"],
             "auto_create_folders": True,
@@ -75,7 +75,8 @@ class SettingsManager:
                 "preferred_regions": ["USA", "Europe", "Japan", "World"]
             },
             "system_filter_settings": {},
-            "ignored_crcs": []  # New setting for ignored CRCs
+            "ignored_crcs": [],  # New setting for ignored CRCs
+            "system_rom_folders": {}  # New setting for system ROM folders
         }
     
     def load_settings(self) -> None:
@@ -87,21 +88,19 @@ class SettingsManager:
                     # Merge with defaults to handle new settings
                     self.settings.update(loaded_settings)
         except (json.JSONDecodeError, IOError) as e:
-            logging.warning(f"Could not load settings from {self.config_file}: {e}")
-            logging.warning("Using default settings.")
+            print(f"Warning: Could not load settings from {self.config_file}: {e}")
+            print("Using default settings.")
     
     def save_settings(self) -> None:
         """Save current settings to configuration file."""
-        logging.info(f"Saving settings to {self.config_file}")
         try:
             # Ensure the config directory exists
             self.config_file.parent.mkdir(parents=True, exist_ok=True)
             
             with open(self.config_file, 'w', encoding='utf-8') as f:
                 json.dump(self.settings, f, indent=4, ensure_ascii=False)
-            logging.info("Settings saved successfully.")
         except Exception as e:
-            logging.error(f"Error saving settings: {e}")
+            print(f"Error saving settings: {e}")
     
     def get_system_filter_settings(self, system_id: str) -> dict:
         """Get filter settings for a specific system."""
@@ -115,24 +114,17 @@ class SettingsManager:
     def get_ignored_crcs(self, system_id: Optional[str] = None) -> list:
         """Get the list of ignored CRCs, optionally for a specific system."""
         if system_id:
-            system_ignores = self.get("system_ignored_crcs", {})
-            return system_ignores.get(str(system_id), [])
-        # Fallback to global list if no system-specific list is found
+            # This allows for system-specific ignore lists in the future if needed
+            # For now, we'll use a global list but structure allows extension
+            system_ignores = self.get(f"system_ignored_crcs.{system_id}", [])
+            if system_ignores: # If system specific list exists and is not empty
+                return system_ignores
         return self.get("ignored_crcs", [])
 
     def set_ignored_crcs(self, crc_list: list, system_id: Optional[str] = None) -> None:
         """Set the list of ignored CRCs, optionally for a specific system."""
-        logging.info(f"Setting ignored CRCs for system {system_id}. List: {crc_list}")
         if system_id:
-            system_ignores = self.get("system_ignored_crcs", {})
-            if crc_list:
-                system_ignores[str(system_id)] = crc_list
-                self.set("system_ignored_crcs", system_ignores)
-            else:
-                # If the list is empty, remove the system-specific key
-                if str(system_id) in system_ignores:
-                    del system_ignores[str(system_id)]
-                    self.set("system_ignored_crcs", system_ignores)
+            self.set(f"system_ignored_crcs.{system_id}", crc_list)
         else:
             self.set("ignored_crcs", crc_list)
         self.save_settings()  # Save settings after modification
@@ -183,23 +175,6 @@ class SettingsManager:
         
         # Set the final value
         setting_dict[keys[-1]] = value
-
-    def delete(self, key: str) -> None:
-        """Delete a setting value.
-        
-        Args:
-            key: Setting key (supports dot notation for nested keys)
-        """
-        keys = key.split('.')
-        d = self.settings
-        for k in keys[:-1]:
-            if not isinstance(d, dict) or k not in d:
-                # Path does not exist
-                return
-            d = d[k]
-        
-        if isinstance(d, dict) and keys[-1] in d:
-            del d[keys[-1]]
     
     def get_dat_folder_path(self) -> str:
         """Get DAT folder path."""
@@ -230,51 +205,41 @@ class SettingsManager:
         return self.get("chunk_size_mb", 64) * 1024 * 1024
     
     def get_system_rom_folders(self, system_id: str) -> list:
-        """Get ROM folders for a specific system.
+        """Get ROM folder paths for a specific system.
         
         Args:
-            system_id: System ID to get ROM folders for
+            system_id: System ID to get folders for
             
         Returns:
             List of ROM folder paths for the system
         """
-        return self.get(f"system_rom_folders.{system_id}", [])
-    
-    def add_system_rom_folder(self, system_id: str, folder_path: str) -> None:
-        """Add a ROM folder for a specific system.
-        
-        Args:
-            system_id: System ID to add ROM folder for
-            folder_path: Path to the ROM folder
-        """
-        current_folders = self.get_system_rom_folders(system_id)
-        if folder_path not in current_folders:
-            current_folders.append(folder_path)
-            self.set(f"system_rom_folders.{system_id}", current_folders)
-            self.save_settings()
+        system_rom_folders = self.get("system_rom_folders", {})
+        return system_rom_folders.get(str(system_id), [])
     
     def set_system_rom_folders(self, system_id: str, folder_paths: list) -> None:
-        """Set ROM folders for a specific system.
+        """Set ROM folder paths for a specific system.
         
         Args:
-            system_id: System ID to set ROM folders for
+            system_id: System ID to set folders for
             folder_paths: List of ROM folder paths
         """
-        self.set(f"system_rom_folders.{system_id}", folder_paths)
+        if "system_rom_folders" not in self.settings:
+            self.settings["system_rom_folders"] = {}
+        
+        self.settings["system_rom_folders"][str(system_id)] = folder_paths.copy()
         self.save_settings()
     
-    def remove_system_rom_folder(self, system_id: str, folder_path: str) -> None:
-        """Remove a ROM folder for a specific system.
+    def add_system_rom_folder(self, system_id: str, folder_path: str) -> None:
+        """Add a ROM folder path for a specific system.
         
         Args:
-            system_id: System ID to remove ROM folder from
-            folder_path: Path to the ROM folder to remove
+            system_id: System ID to add folder for
+            folder_path: ROM folder path to add
         """
-        current_folders = self.get_system_rom_folders(system_id)
-        if folder_path in current_folders:
-            current_folders.remove(folder_path)
-            self.set(f"system_rom_folders.{system_id}", current_folders)
-            self.save_settings()
+        current_folders = self.get_system_rom_folders(str(system_id))
+        if folder_path not in current_folders:
+            current_folders.append(folder_path)
+            self.set_system_rom_folders(str(system_id), current_folders)
     
     def get_all_settings(self) -> Dict[str, Any]:
         """Get all settings as a dictionary.
