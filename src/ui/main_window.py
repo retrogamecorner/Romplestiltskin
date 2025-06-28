@@ -417,27 +417,27 @@ class MainWindow(QMainWindow):
         
         # Define tab colors and icons
         tab_colors = {
-            'correct': {'color': '#45ae6b', 'icon': 'fa5s.check'},
-            'missing': {'color': '#ffff04', 'icon': 'fa5s.question'},
-            'ignored': {'color': '#cfcfcf', 'icon': 'fa5s.ban'},
-            'unrecognized': {'color': '#ffa33c', 'icon': 'fa5s.exclamation-triangle'},
+            'correct': {'color': '#49dd7f', 'icon': 'fa5s.check'},
+            'missing': {'color': '#f2d712', 'icon': 'fa5s.question'},
+            'ignored': {'color': '#c9c9c9', 'icon': 'fa5s.ban'},
+            'unrecognized': {'color': '#ff993c', 'icon': 'fa5s.exclamation-triangle'},
             'broken': {'color': '#e26c6c', 'icon': 'fa5s.exclamation-circle'}
         }
         
         # Add tabs to the tab widget with QtAwesome icons (smaller size)
-        # correct_icon = qta.icon(tab_colors['correct']['icon'], color=tab_colors['correct']['color'], scale_factor=0.7)
-        # missing_icon = qta.icon(tab_colors['missing']['icon'], color=tab_colors['missing']['color'], scale_factor=0.7)
-        # ignored_icon = qta.icon(tab_colors['ignored']['icon'], color=tab_colors['ignored']['color'], scale_factor=0.7)
-        # unrecognized_icon = qta.icon(tab_colors['unrecognized']['icon'], color=tab_colors['unrecognized']['color'], scale_factor=0.7)
-        # broken_icon = qta.icon(tab_colors['broken']['icon'], color=tab_colors['broken']['color'], scale_factor=0.7)
+        correct_icon = qta.icon(tab_colors['correct']['icon'], color=tab_colors['correct']['color'], scale_factor=0.7)
+        missing_icon = qta.icon(tab_colors['missing']['icon'], color=tab_colors['missing']['color'], scale_factor=0.7)
+        ignored_icon = qta.icon(tab_colors['ignored']['icon'], color=tab_colors['ignored']['color'], scale_factor=0.7)
+        unrecognized_icon = qta.icon(tab_colors['unrecognized']['icon'], color=tab_colors['unrecognized']['color'], scale_factor=0.7)
+        broken_icon = qta.icon(tab_colors['broken']['icon'], color=tab_colors['broken']['color'], scale_factor=0.7)
         
         print("      Ignored ROMs tab created.")
-        # Add tabs
-        self.rom_tabs.addTab(correct_tab, "Correct")
-        self.rom_tabs.addTab(missing_tab, "Missing")
-        self.rom_tabs.addTab(ignored_tab, "Ignored")
-        self.rom_tabs.addTab(unrecognized_tab, "Unrecognized")
-        self.rom_tabs.addTab(broken_tab, "Broken")
+        # Add tabs with icons
+        self.rom_tabs.addTab(correct_tab, correct_icon, "Correct")
+        self.rom_tabs.addTab(missing_tab, missing_icon, "Missing")
+        self.rom_tabs.addTab(ignored_tab, ignored_icon, "Ignored")
+        self.rom_tabs.addTab(unrecognized_tab, unrecognized_icon, "Unrecognized")
+        self.rom_tabs.addTab(broken_tab, broken_icon, "Broken")
         
         # Store tab colors for later use
         self.tab_colors = tab_colors
@@ -459,7 +459,6 @@ class MainWindow(QMainWindow):
             }
             QTabBar::tab { 
                 background-color: #3e3e3e !important; 
-                color: #ffffff !important;
                 padding: 8px !important; 
                 margin-right: 2px !important; 
                 border-top-left-radius: 4px !important; 
@@ -467,11 +466,9 @@ class MainWindow(QMainWindow):
             }
             QTabBar::tab:selected { 
                 background-color: #3e3e3e !important;
-                color: #ffffff !important;
             }
             QTabBar::tab:hover { 
                 background-color: #2c2c2c !important;
-                color: #ffffff !important;
             }
         """
         self.rom_tabs.setStyleSheet(tab_style)
