@@ -2047,7 +2047,9 @@ class MainWindow(QMainWindow):
                         matched_crcs.add(rom_crc)
             
             matching_count = len(matched_crcs)
-            missing_count = total_dat_games - matching_count
+            # Count ignored ROMs that are in the visible CRCs (current filter)
+            ignored_count = len([crc for crc in self.ignored_crcs if crc in visible_crcs])
+            missing_count = total_dat_games - matching_count - ignored_count
             unrecognised_count = current_unrecognised
             broken_count = current_broken
             total_roms = len(system_results_dicts)
@@ -2070,7 +2072,9 @@ class MainWindow(QMainWindow):
                             db_matched_crcs.add(matched_crc)
                 
                 matching_count = len(db_matched_crcs)
-                missing_count = total_dat_games - matching_count
+                # Count ignored ROMs that are in the visible CRCs (current filter)
+                ignored_count = len([crc for crc in self.ignored_crcs if crc in visible_crcs])
+                missing_count = total_dat_games - matching_count - ignored_count
                 unrecognised_count = scan_summary.get('not_recognized', 0)
                 broken_count = scan_summary.get('broken', 0)
                 total_roms = scan_summary.get('total', 0)

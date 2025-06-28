@@ -96,7 +96,7 @@ class SettingsDialog(QDialog):
         region_layout.addWidget(region_help)
         
         self.region_priority_list = DragDropListWidget(self.theme)
-        self.region_priority_list.setMaximumHeight(self.theme.get_dimension('settings_list_maximum_height'))
+        self.region_priority_list.setMaximumHeight(self.theme.get_dimension('settings_dialog', 'list_maximum_height'))
         region_layout.addWidget(self.region_priority_list)
         
         # Buttons for region management
@@ -136,7 +136,7 @@ class SettingsDialog(QDialog):
         language_layout.addWidget(language_help)
         
         self.language_priority_list = DragDropListWidget(self.theme)
-        self.language_priority_list.setMaximumHeight(self.theme.get_dimension('settings_list_maximum_height'))
+        self.language_priority_list.setMaximumHeight(self.theme.get_dimension('settings_dialog', 'list_maximum_height'))
         language_layout.addWidget(self.language_priority_list)
         
         # Buttons for language management
@@ -189,7 +189,7 @@ class SettingsDialog(QDialog):
         layout = QVBoxLayout(tab)
         
         # Define button styles for this tab
-        modern_button_style = self.theme.get_settings_modern_button_style()
+        main_button_style = self.theme.get_button_style("QMainButton")
         
         # DAT Files
         dat_group = QGroupBox("DAT Files")
@@ -583,7 +583,7 @@ class SettingsDialog(QDialog):
         
         # Warning section
         warning_group = QGroupBox("⚠️ Danger Zone")
-        warning_group.setStyleSheet(self.theme.get_settings_danger_group_box_style())
+        warning_group.setStyleSheet(self.theme.get_settings_danger_group_style())
         warning_layout = QVBoxLayout(warning_group)
         warning_layout.setSpacing(15)
         
@@ -592,7 +592,7 @@ class SettingsDialog(QDialog):
             "of any important data before proceeding."
         )
         warning_text.setWordWrap(True)
-        warning_text.setStyleSheet(self.theme.get_settings_warning_text_style())
+        warning_text.setStyleSheet(self.theme.get_settings_warning_button_style())
         warning_layout.addWidget(warning_text)
         
         # Reset buttons with improved styling
@@ -609,7 +609,7 @@ class SettingsDialog(QDialog):
             "ROM files in your ROM folders will NOT be deleted."
         )
         reset_program_desc.setWordWrap(True)
-        reset_program_desc.setStyleSheet(self.theme.get_settings_description_text_style())
+        reset_program_desc.setStyleSheet(self.theme.get_settings_help_text_style())
         warning_layout.addWidget(reset_program_desc)
         
         # System selection for partial reset
@@ -645,7 +645,7 @@ class SettingsDialog(QDialog):
             "ROM files will NOT be deleted."
         )
         remove_system_desc.setWordWrap(True)
-        remove_system_desc.setStyleSheet(self.theme.get_settings_description_text_style())
+        remove_system_desc.setStyleSheet(self.theme.get_settings_help_text_style())
         system_reset_layout.addWidget(remove_system_desc)
         
         warning_layout.addWidget(system_reset_group)
