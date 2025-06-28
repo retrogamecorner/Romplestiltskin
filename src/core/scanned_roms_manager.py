@@ -478,3 +478,28 @@ class ScannedROMsManager:
                     summary['duplicate'] = count
             
             return summary
+    
+    def get_rom_original_status(self, system_id: int, crc32: str) -> Optional[ROMStatus]:
+        """Get the original status of a ROM before it was ignored.
+        
+        Args:
+            system_id: ID of the system
+            crc32: CRC32 of the ROM
+            
+        Returns:
+            The original ROMStatus if found, None otherwise
+        """
+        with self.get_connection() as conn:
+            cursor = conn.cursor()
+            cursor.execute("""
+                SELECT original_status FROM scanned_roms
+                WHERE system_id = ? AND calculated_crc32 = ?
+            """, (system_id, crc32))
+            
+            row = cursor.fetchone()
+            if row and row['original_status']:
+                try:
+                    return ROMStatus(row['original_status'])
+                except ValueError:
+                    return None
+            return None

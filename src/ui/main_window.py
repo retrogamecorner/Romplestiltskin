@@ -610,25 +610,54 @@ class MainWindow(QMainWindow):
                     current_ignored.remove(crc32)
                     self.settings_manager.set_ignored_crcs(current_ignored, self.current_system_id)
             
-            # This is a simplification. We'd need to know the original status.
-            # For now, we'll move them to unrecognized if they have a file path, and missing if they don't.
-            # Try to get the full file path from UserRole data first, fallback to text
-            file_path = item.data(1, Qt.ItemDataRole.UserRole) or item.text(1)
-            if file_path:
-                self.scanned_roms_manager.update_rom_status(
-                    self.current_system_id,
-                    ROMStatus.NOT_RECOGNIZED,
-                    file_path=file_path
-                )
+            # Get the original status from the database to restore the ROM to its proper state
+            original_status = self.scanned_roms_manager.get_rom_original_status(self.current_system_id, crc32)
+            
+            if original_status:
+                 # Restore to the original status
+                 # Always use CRC32 for identification since file_path might be a display name
+                 print(f"DEBUG: Restoring ROM to original status: {original_status}")
+                 self.scanned_roms_manager.update_rom_status(
+                     self.current_system_id,
+                     original_status,
+                     crc32=crc32
+                 )
             else:
-                self.scanned_roms_manager.update_rom_status(
-                    self.current_system_id,
-                    ROMStatus.MISSING,
-                    crc32=crc32
-                )
+                # Fallback to the old logic if no original status is found
+                # Try to get the full file path from UserRole data first, fallback to text
+                file_path = item.data(1, Qt.ItemDataRole.UserRole) or item.text(1)
+                if file_path:
+                    self.scanned_roms_manager.update_rom_status(
+                        self.current_system_id,
+                        ROMStatus.NOT_RECOGNIZED,
+                        file_path=file_path
+                    )
+                else:
+                    self.scanned_roms_manager.update_rom_status(
+                        self.current_system_id,
+                        ROMStatus.MISSING,
+                        crc32=crc32
+                    )
+
+        # Debug: Check database state after unignore
+        if hasattr(self, 'scanned_roms_manager'):
+            print(f"DEBUG: After unignore, checking ROM status for CRC32: {crc32}")
+            rom_data = self.scanned_roms_manager.get_rom_by_crc32(self.current_system_id, crc32)
+            if rom_data:
+                print(f"DEBUG: ROM found in database with status: {rom_data.get('status')}")
+            else:
+                print(f"DEBUG: ROM not found in database")
+            
+            # Also check all missing ROMs
+            missing_roms = self.scanned_roms_manager.get_scanned_roms_by_status(self.current_system_id, ROMStatus.MISSING)
+            print(f"DEBUG: Total missing ROMs in database: {len(missing_roms)}")
+            for rom in missing_roms:
+                print(f"DEBUG: Missing ROM: CRC32={rom.get('calculated_crc32')}, status={rom.get('status')}")
 
         # Refresh the ROM lists
+        print("DEBUG: About to call update_rom_lists()")
         self.update_rom_lists()
+        print("DEBUG: update_rom_lists() completed")
                 
     def update_tab_styles(self, index=None):
         """Update tab styles using direct QTabBar methods."""
@@ -732,7 +761,7 @@ class MainWindow(QMainWindow):
                 item.setData(1, Qt.ItemDataRole.UserRole, rom_data['file_path'])
                 self.ignored_tree.addTopLevelItem(item)
         
-        self.ignored_tree.sortItems(0, Qt.SortOrder.AscendingOrder)
+        self.ignored_tree.sortItems(1, Qt.SortOrder.AscendingOrder)
 
     def create_bottom_panel(self) -> QWidget:
         """Create the bottom panel with filters and actions."""
@@ -1542,14 +1571,17 @@ class MainWindow(QMainWindow):
                         self.correct_tree.addTopLevelItem(item)
         
         # Sort by game name alphabetically
-        self.correct_tree.sortItems(0, Qt.SortOrder.AscendingOrder)
+        self.correct_tree.sortItems(1, Qt.SortOrder.AscendingOrder)
     
     def update_missing_roms(self):
         """Update the missing ROMs tab with games that are in the DAT but not found in the scan."""
+        print("DEBUG: update_missing_roms() called")
         if not hasattr(self, 'all_games') or not self.all_games:
+            print("DEBUG: No all_games data, returning early")
             return
             
         self.missing_tree.clear()
+        print("DEBUG: Missing tree cleared")
         
         current_system_id = self.system_combo.currentData()
         if current_system_id is None:
@@ -1605,9 +1637,12 @@ class MainWindow(QMainWindow):
                     self.missing_tree.addTopLevelItem(item)
         
         # Also add ROMs with MISSING status from the database (e.g., unignored ROMs)
+        print("DEBUG: About to query missing ROMs from database")
         if hasattr(self, 'scanned_roms_manager'):
             missing_roms_from_db = self.scanned_roms_manager.get_scanned_roms_by_status(current_system_id, ROMStatus.MISSING)
+            print(f"DEBUG: Found {len(missing_roms_from_db)} missing ROMs in database")
             for rom_data in missing_roms_from_db:
+                print(f"DEBUG: Processing missing ROM from DB: CRC32={rom_data.get('calculated_crc32')}, status={rom_data.get('status')}")
                 crc32 = rom_data.get('calculated_crc32') or rom_data.get('matched_game_crc32')
                 if crc32 and crc32 not in self.ignored_crcs:
                     # Check if this ROM is already in the missing list (avoid duplicates)
@@ -1646,7 +1681,7 @@ class MainWindow(QMainWindow):
                             self.missing_tree.addTopLevelItem(item)
         
         # Sort by game name alphabetically
-        self.missing_tree.sortItems(0, Qt.SortOrder.AscendingOrder)
+        self.missing_tree.sortItems(1, Qt.SortOrder.AscendingOrder)
             
         # Update summary with missing count
         if hasattr(self, 'rom_scanner') and hasattr(self, 'current_scan_results'):
@@ -1801,7 +1836,7 @@ class MainWindow(QMainWindow):
             self.dat_tree.addTopLevelItem(item)
         
         # Sort by game name alphabetically
-        self.dat_tree.sortItems(0, Qt.SortOrder.AscendingOrder)
+        self.dat_tree.sortItems(1, Qt.SortOrder.AscendingOrder)
         
         # Update DAT stats with bold formatting
         self.dat_stats_label.setText(f"<b>Total:</b> {total_games} | <b>Filtered out:</b> {filtered_out} | <b>Showing:</b> {showing}")
@@ -1876,7 +1911,7 @@ class MainWindow(QMainWindow):
                     self.unrecognized_tree.addTopLevelItem(item)
         
         # Sort by file name alphabetically
-        self.unrecognized_tree.sortItems(0, Qt.SortOrder.AscendingOrder)
+        self.unrecognized_tree.sortItems(1, Qt.SortOrder.AscendingOrder)
     
     def update_broken_roms(self, results: List[ROMScanResult] = None):
         """Update the broken ROMs tab with ROMs that are corrupted or unreadable.
@@ -1928,7 +1963,7 @@ class MainWindow(QMainWindow):
                     self.broken_tree.addTopLevelItem(item)
         
         # Sort by file name alphabetically
-        self.broken_tree.sortItems(0, Qt.SortOrder.AscendingOrder)
+        self.broken_tree.sortItems(1, Qt.SortOrder.AscendingOrder)
     
     def update_rom_stats(self):
         """Update ROM statistics display."""
