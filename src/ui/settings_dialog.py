@@ -19,6 +19,7 @@ from PyQt6.QtWidgets import (
 )
 from PyQt6.QtCore import Qt, pyqtSignal
 from PyQt6.QtGui import QFont
+import qtawesome as qta
 
 from core.settings_manager import SettingsManager
 from ui.drag_drop_list import DragDropListWidget
@@ -85,6 +86,7 @@ class SettingsDialog(QDialog):
         
         # Region Priority
         region_group = QGroupBox("Region Priority")
+        region_group.setStyleSheet(self.theme.get_settings_transparent_group_box_style())
         region_layout = QVBoxLayout(region_group)
         
         region_help = QLabel(
@@ -97,6 +99,10 @@ class SettingsDialog(QDialog):
         
         self.region_priority_list = DragDropListWidget(self.theme)
         self.region_priority_list.setMaximumHeight(self.theme.get_dimension('settings_dialog', 'list_maximum_height'))
+        # Apply correct styling for drag and drop list
+        available_style = self.theme.get_drag_drop_available_list_style()
+        self.region_priority_list.setStyleSheet(available_style)
+        self.region_priority_list.set_original_style(available_style)
         region_layout.addWidget(self.region_priority_list)
         
         # Buttons for region management
@@ -110,12 +116,14 @@ class SettingsDialog(QDialog):
         self.add_region_edit.setPlaceholderText("Add new region...")
         region_buttons.addWidget(self.add_region_edit)
         
-        self.add_region_button = QPushButton("➕ Add")
+        self.add_region_button = QPushButton("Add")
+        self.add_region_button.setIcon(qta.icon('fa5s.plus', color='#d6d6d6', scale_factor=0.8))
         self.add_region_button.setStyleSheet(main_button_style)
         self.add_region_button.clicked.connect(self.add_region)
         region_buttons.addWidget(self.add_region_button)
         
-        self.remove_region_button = QPushButton("➖ Remove")
+        self.remove_region_button = QPushButton("Remove")
+        self.remove_region_button.setIcon(qta.icon('fa5s.minus', color='#d6d6d6', scale_factor=0.8))
         self.remove_region_button.setStyleSheet(main_button_style)
         self.remove_region_button.clicked.connect(self.remove_region)
         region_buttons.addWidget(self.remove_region_button)
@@ -125,6 +133,7 @@ class SettingsDialog(QDialog):
         
         # Language Priority
         language_group = QGroupBox("Language Priority")
+        language_group.setStyleSheet(self.theme.get_settings_transparent_group_box_style())
         language_layout = QVBoxLayout(language_group)
         
         language_help = QLabel(
@@ -137,6 +146,10 @@ class SettingsDialog(QDialog):
         
         self.language_priority_list = DragDropListWidget(self.theme)
         self.language_priority_list.setMaximumHeight(self.theme.get_dimension('settings_dialog', 'list_maximum_height'))
+        # Apply correct styling for drag and drop list
+        available_style = self.theme.get_drag_drop_available_list_style()
+        self.language_priority_list.setStyleSheet(available_style)
+        self.language_priority_list.set_original_style(available_style)
         language_layout.addWidget(self.language_priority_list)
         
         # Buttons for language management
@@ -147,12 +160,14 @@ class SettingsDialog(QDialog):
         self.add_language_edit.setPlaceholderText("Add new language...")
         language_buttons.addWidget(self.add_language_edit)
         
-        self.add_language_button = QPushButton("➕ Add")
+        self.add_language_button = QPushButton("Add")
+        self.add_language_button.setIcon(qta.icon('fa5s.plus', color='#d6d6d6', scale_factor=0.8))
         self.add_language_button.setStyleSheet(main_button_style)
         self.add_language_button.clicked.connect(self.add_language)
         language_buttons.addWidget(self.add_language_button)
         
-        self.remove_language_button = QPushButton("➖ Remove")
+        self.remove_language_button = QPushButton("Remove")
+        self.remove_language_button.setIcon(qta.icon('fa5s.minus', color='#d6d6d6', scale_factor=0.8))
         self.remove_language_button.setStyleSheet(main_button_style)
         self.remove_language_button.clicked.connect(self.remove_language)
         language_buttons.addWidget(self.remove_language_button)
@@ -163,6 +178,7 @@ class SettingsDialog(QDialog):
         
         # Performance
         performance_group = QGroupBox("Performance")
+        performance_group.setStyleSheet(self.theme.get_settings_transparent_group_box_style())
         performance_layout = QFormLayout(performance_group)
         
         self.chunk_size_spin = QSpinBox()
@@ -193,6 +209,7 @@ class SettingsDialog(QDialog):
         
         # DAT Files
         dat_group = QGroupBox("DAT Files")
+        dat_group.setStyleSheet(self.theme.get_settings_transparent_group_box_style())
         dat_layout = QFormLayout(dat_group)
         
         dat_row = QHBoxLayout()
@@ -200,7 +217,8 @@ class SettingsDialog(QDialog):
         self.dat_folder_edit.setReadOnly(True)
         dat_row.addWidget(self.dat_folder_edit)
         
-        self.dat_browse_button = QPushButton("📁 Browse...")
+        self.dat_browse_button = QPushButton("Browse...")
+        self.dat_browse_button.setIcon(qta.icon('fa5s.folder-open', color='#d6d6d6', scale_factor=0.8))
         self.dat_browse_button.setStyleSheet(main_button_style)
         self.dat_browse_button.clicked.connect(self.browse_dat_folder)
         dat_row.addWidget(self.dat_browse_button)
@@ -219,6 +237,7 @@ class SettingsDialog(QDialog):
         
         # Output Folders
         output_group = QGroupBox("Output Folders")
+        output_group.setStyleSheet(self.theme.get_settings_transparent_group_box_style())
         output_layout = QFormLayout(output_group)
         
         # Extra files folder
@@ -226,7 +245,8 @@ class SettingsDialog(QDialog):
         self.extra_folder_edit = QLineEdit()
         extra_row.addWidget(self.extra_folder_edit)
         
-        self.extra_browse_button = QPushButton("📁 Browse...")
+        self.extra_browse_button = QPushButton("Browse...")
+        self.extra_browse_button.setIcon(qta.icon('fa5s.folder-open', color='#d6d6d6', scale_factor=0.8))
         self.extra_browse_button.setStyleSheet(main_button_style)
         self.extra_browse_button.clicked.connect(self.browse_extra_folder)
         extra_row.addWidget(self.extra_browse_button)
@@ -238,7 +258,8 @@ class SettingsDialog(QDialog):
         self.broken_folder_edit = QLineEdit()
         broken_row.addWidget(self.broken_folder_edit)
         
-        self.broken_browse_button = QPushButton("📁 Browse...")
+        self.broken_browse_button = QPushButton("Browse...")
+        self.broken_browse_button.setIcon(qta.icon('fa5s.folder-open', color='#d6d6d6', scale_factor=0.8))
         self.broken_browse_button.setStyleSheet(main_button_style)
         self.broken_browse_button.clicked.connect(self.browse_broken_folder)
         broken_row.addWidget(self.broken_browse_button)
@@ -264,8 +285,9 @@ class SettingsDialog(QDialog):
         tab = QWidget()
         layout = QVBoxLayout(tab)
         
-        # Default Filters
+        # Default Filter Settings
         filter_group = QGroupBox("Default Filter Settings")
+        filter_group.setStyleSheet(self.theme.get_settings_transparent_group_box_style())
         filter_layout = QVBoxLayout(filter_group)
         
         filter_help = QLabel(
@@ -302,6 +324,7 @@ class SettingsDialog(QDialog):
         
         # Duplicate Handling
         duplicate_group = QGroupBox("Duplicate Handling")
+        duplicate_group.setStyleSheet(self.theme.get_settings_transparent_group_box_style())
         duplicate_layout = QFormLayout(duplicate_group)
         
         self.duplicate_action_combo = QComboBox()
@@ -324,6 +347,7 @@ class SettingsDialog(QDialog):
         
         # File Operations
         file_ops_group = QGroupBox("File Operations")
+        file_ops_group.setStyleSheet(self.theme.get_settings_transparent_group_box_style())
         file_ops_layout = QVBoxLayout(file_ops_group)
         
         self.backup_before_rename_cb = QCheckBox("Create backup before renaming files")
@@ -336,6 +360,7 @@ class SettingsDialog(QDialog):
         
         # Matching Algorithm
         matching_group = QGroupBox("Matching Algorithm")
+        matching_group.setStyleSheet(self.theme.get_settings_transparent_group_box_style())
         matching_layout = QFormLayout(matching_group)
         
         self.similarity_threshold_slider = QSlider(Qt.Orientation.Horizontal)
@@ -362,6 +387,7 @@ class SettingsDialog(QDialog):
         
         # Debug Options
         debug_group = QGroupBox("Debug Options")
+        debug_group.setStyleSheet(self.theme.get_settings_transparent_group_box_style())
         debug_layout = QVBoxLayout(debug_group)
         
         self.enable_debug_logging_cb = QCheckBox("Enable debug logging")
@@ -582,9 +608,31 @@ class SettingsDialog(QDialog):
         layout.setContentsMargins(*margins)
         
         # Warning section
-        warning_group = QGroupBox("⚠️ Danger Zone")
+        warning_group = QGroupBox("Danger Zone")
         warning_group.setStyleSheet(self.theme.get_settings_danger_group_style())
+        
+        # Create a custom title widget with icon
+        title_widget = QWidget()
+        title_layout = QHBoxLayout(title_widget)
+        title_layout.setContentsMargins(0, 0, 0, 0)
+        title_layout.setSpacing(5)
+        
+        # Add warning icon
+        warning_icon = QLabel()
+        warning_icon.setPixmap(qta.icon('fa5s.exclamation-triangle', color='#c9c9c9').pixmap(16, 16))
+        title_layout.addWidget(warning_icon)
+        
+        # Add title text
+        title_text = QLabel("Danger Zone")
+        title_text.setStyleSheet("color: #c9c9c9; font-weight: bold;")
+        title_layout.addWidget(title_text)
+        title_layout.addStretch()
+        
+        # Set the custom widget as the group box title
+        warning_group.setTitle("")
+        
         warning_layout = QVBoxLayout(warning_group)
+        warning_layout.addWidget(title_widget)
         warning_layout.setSpacing(15)
         
         warning_text = QLabel(
@@ -599,7 +647,8 @@ class SettingsDialog(QDialog):
         button_style = self.theme.get_settings_danger_button_style()
         
         # Reset Program button
-        reset_program_btn = QPushButton("🔄 Reset Entire Program")
+        reset_program_btn = QPushButton("Reset Entire Program")
+        reset_program_btn.setIcon(qta.icon('fa5s.redo', color='#d6d6d6', scale_factor=0.8))
         reset_program_btn.setStyleSheet(button_style)
         reset_program_btn.clicked.connect(self.reset_entire_program)
         warning_layout.addWidget(reset_program_btn)
@@ -614,7 +663,7 @@ class SettingsDialog(QDialog):
         
         # System selection for partial reset
         system_reset_group = QGroupBox("Remove Specific System")
-        system_reset_group.setStyleSheet(self.theme.get_settings_group_box_style())
+        system_reset_group.setStyleSheet(self.theme.get_settings_transparent_group_box_style())
         system_reset_layout = QVBoxLayout(system_reset_group)
         system_reset_layout.setSpacing(10)
         
@@ -635,7 +684,8 @@ class SettingsDialog(QDialog):
         system_reset_layout.addLayout(system_combo_layout)
         
         # Remove system button
-        remove_system_btn = QPushButton("🗑️ Remove Selected System")
+        remove_system_btn = QPushButton("Remove Selected System")
+        remove_system_btn.setIcon(qta.icon('fa5s.trash', color='#d6d6d6', scale_factor=0.8))
         remove_system_btn.setStyleSheet(self.theme.get_settings_warning_button_style())
         remove_system_btn.clicked.connect(self.remove_selected_system)
         system_reset_layout.addWidget(remove_system_btn)
@@ -652,7 +702,7 @@ class SettingsDialog(QDialog):
         layout.addWidget(warning_group)
         layout.addStretch()
         
-        self.tab_widget.addTab(tab, "🔧 System Management")
+        self.tab_widget.addTab(tab, "System Management")
     
     def populate_system_combo(self):
         """Populate the system combo box with available systems."""

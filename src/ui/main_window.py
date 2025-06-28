@@ -459,13 +459,19 @@ class MainWindow(QMainWindow):
             }
             QTabBar::tab { 
                 background-color: #3e3e3e !important; 
+                color: #ffffff !important;
                 padding: 8px !important; 
                 margin-right: 2px !important; 
                 border-top-left-radius: 4px !important; 
                 border-top-right-radius: 4px !important; 
             }
             QTabBar::tab:selected { 
-                background-color: #4e4e4e !important;
+                background-color: #3e3e3e !important;
+                color: #ffffff !important;
+            }
+            QTabBar::tab:hover { 
+                background-color: #2c2c2c !important;
+                color: #ffffff !important;
             }
         """
         self.rom_tabs.setStyleSheet(tab_style)
@@ -688,13 +694,19 @@ class MainWindow(QMainWindow):
             }
             QTabBar::tab { 
                 background-color: #3e3e3e !important; 
+                color: #ffffff !important;
                 padding: 8px !important; 
                 margin-right: 2px !important; 
                 border-top-left-radius: 4px !important; 
                 border-top-right-radius: 4px !important; 
             }
             QTabBar::tab:selected { 
-                background-color: #4e4e4e !important;
+                background-color: #3e3e3e !important;
+                color: #ffffff !important;
+            }
+            QTabBar::tab:hover { 
+                background-color: #2c2c2c !important;
+                color: #ffffff !important;
             }
         """
         

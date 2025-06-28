@@ -31,9 +31,9 @@ class Theme:
             'warning': '#FFC107',
             'warning_hover': '#f57c00',
             'warning_pressed': '#ef6c00',
-            'error': '#F44336',
-            'error_hover': '#d32f2f',
-            'error_pressed': '#b71c1c',
+            'error': '#6b211e',
+            'error_hover': '#6b211e',
+            'error_pressed': '#6b211e',
             'button': '#2a2a2a',  # Same as medium_gray
             'button_hover': '#3a3a3a',  # Same as light_gray
             'button_text': '#ffffff',
@@ -47,17 +47,17 @@ class Theme:
             'drag_drop': {
                 'highlight_border': '#d6d6d6',  # Color for the drop indicator line
                 'highlight_background': 'rgba(0, 120, 212, 0.1)', # Retained for now, might be unused
-                'available_bg': '#3A3A3A',
+                'available_bg': '#2c2c2c',
                 'available_item': 'transparent',
                 'available_text': '#d6d6d6',
-                'available_selected_bg': '#3A3A3A',  # Same as available_bg
-                'available_hover_bg': '#3A3A3A', # Same as available_bg to avoid color change
+                'available_selected_bg': '#2c2c2c',  # Same as available_bg
+                'available_hover_bg': '#2c2c2c', # Same as available_bg to avoid color change
                 'available_hover_text': '#d6d6d6', # Same as available_text to avoid color change
-                'ignored_hover_bg': '#4b3737',  # Same as ignored_bg to avoid color change
+                'ignored_hover_bg': '#2c2c2c',  # Same as ignored_bg to avoid color change
                 'ignored_hover_text': '#d99595', # Same as ignored_text to avoid color change
-                'ignored_bg': '#4b3737',
+                'ignored_bg': '#2c2c2c',
                 'ignored_item': 'transparent',
-                'ignored_selected_bg': '#4b3737',  # Same as ignored_bg
+                'ignored_selected_bg': '#2c2c2c',  # Same as ignored_bg
                 'ignored_text': '#d99595'
             },
             # Progress dialog colors
@@ -214,8 +214,12 @@ class Theme:
         QCheckBox, QLabel {{
             background: transparent;
         }}
+        
+        QCheckBox {{
+            color: #c9c9c9;
+        }}
 
-        QWidget {{
+        QMainWindow {{
             background-color: {self.colors['background']}; 
             color: {self.colors['text']};
             font-family: {self.fonts['family']};
@@ -311,6 +315,7 @@ class Theme:
         QMenu::item {{
             padding: 8px 10px 8px 10px;
             background-color: {self.colors['central_widget']};
+            color: {self.colors['text']};
             margin: 0px;
             border: none;
         }}
@@ -389,11 +394,25 @@ class Theme:
 
         /* Buttons inside dialogs */
         QDialog QPushButton {{
-            background-color: #1a1a1a;
+            background-color: #2c2c2c;
         }}
 
         QDialog QPushButton:hover {{
+            background-color: #4a4a4a;
+        }}
+        
+        /* Dialog button box buttons */
+        QDialogButtonBox QPushButton {{
             background-color: #2c2c2c;
+        }}
+        
+        QDialogButtonBox QPushButton:hover {{
+            background-color: #4a4a4a;
+        }}
+        
+        /* Checkbox labels in dialogs */
+        QDialog QCheckBox {{
+            color: #c9c9c9;
         }}
         
         /* Premium action buttons */
@@ -530,7 +549,7 @@ class Theme:
         
         /* Line edit */
         QLineEdit {{
-            background-color: {self.colors['medium_gray']};
+            background-color: #2c2c2c;
             border: {self.dimensions['border_width']}px solid {self.colors['border']};
             border-radius: {self.dimensions['border_radius']}px;
             padding: {self.layout['input_padding']};
@@ -544,7 +563,7 @@ class Theme:
         
         /* Text edit */
         QTextEdit {{
-            background-color: {self.colors['dark_gray']};
+            background-color: #2c2c2c;
             border: {self.dimensions['border_width']}px solid {self.colors['border']};
             border-radius: {self.dimensions['border_radius']}px;
             color: {self.colors['text']};
@@ -603,6 +622,35 @@ class Theme:
             background-color: transparent;
         }}
         
+        /* Dialog tab widget */
+        QDialog QTabWidget::pane {{
+            border: none;
+            background-color: transparent;
+        }}
+        
+        /* Dialog tab bar styling */
+        QDialog QTabBar {{
+            background-color: transparent;
+        }}
+        
+        QDialog QTabBar::tab {{
+            background-color: #3e3e3e;
+            color: #c9c9c9;
+            padding: 8px 16px;
+            margin-right: 2px;
+            border: none;
+        }}
+        
+        QDialog QTabBar::tab:hover {{
+            background-color: #2c2c2c;
+            color: #c9c9c9;
+        }}
+        
+        QDialog QTabBar::tab:selected {{
+            background-color: #3e3e3e;
+            color: #c9c9c9;
+        }}
+        
         /* Tab styling is handled entirely in main_window.py */
         
         /* Scroll bars */
@@ -640,7 +688,7 @@ class Theme:
         
         /* Spin box */
         QSpinBox {{
-            background-color: {self.colors['medium_gray']};
+            background-color: #2c2c2c;
             border: {self.dimensions['border_width']}px solid {self.colors['border']};
             border-radius: {self.dimensions['border_radius']}px;
             padding: {self.layout['input_padding']};
@@ -654,19 +702,16 @@ class Theme:
             height: 16px;
             border: 1px solid {self.colors['group_bg']};
             border-radius: 3px;
-            /* background-color: {self.colors['medium_gray']}; */
-            background: none !important;
+            background-color: transparent;
             border: 2px solid #484848;
         }}
         
         QCheckBox::indicator:checked {{
             width: 16px;
             height: 16px;
-            /* border: 1px solid {self.colors['group_bg']}; */
             border: 2px solid #484848;
             border-radius: 3px;
-            /* background-color: {self.colors['medium_gray']}; */
-            background: none !important;
+            background-color: transparent;
             image: url(src/ui/flags/checkmark.svg);
         }}
         
@@ -970,11 +1015,11 @@ class Theme:
     def get_settings_danger_group_style(self):
         """Get danger zone group box style for settings dialog."""
         return f"""
-            QGroupBox {{{{
-                background: {self.colors['group_bg']};
+            QGroupBox {{
+                background: transparent;
                 font-weight: {self.fonts['weight_bold']};
                 font-size: 14px;
-                color: {self.colors['error']};
+                color: #c9c9c9;
                 border: 2px solid {self.colors['error']};
                 border-radius: {self.dimensions['border_radius_large']}px;
                 margin-top: 10px;
@@ -1015,7 +1060,7 @@ class Theme:
         """Get warning button style for settings dialog."""
         return f"""
             QPushButton {{
-                background-color: {self.colors['warning']};
+                background-color: #6b211e;
                 color: {self.colors['button_text']};
                 border: none;
                 border-radius: {self.dimensions['border_radius']}px;
@@ -1025,10 +1070,10 @@ class Theme:
                 min-height: {self.dimensions['button_min_height']}px;
             }}
             QPushButton:hover {{
-                background-color: {self.colors['warning_hover']};
+                background-color: #6b211e;
             }}
             QPushButton:pressed {{
-                background-color: {self.colors['warning_pressed']};
+                background-color: #6b211e;
             }}
         """
     
@@ -1036,15 +1081,14 @@ class Theme:
         """Get standard group box style for settings dialog."""
         return f"""
             QGroupBox {{
-                background: {self.colors['group_bg']};
+                background-color: {self.colors['central_widget']};
                 font-weight: {self.fonts['weight_bold']};
                 font-size: 14px;
-                border: 2px solid {self.colors['border']};
-                border-radius: {self.dimensions['border_radius_large']}px;
-                margin-top: 10px;
-                padding-top: 10px;
-                subcontrol-origin: margin;
-                left: {self.layout['title_left_offset']}px;
+                border: {self.dimensions['border_width']}px solid {self.colors['border']};
+                border-radius: {self.dimensions['border_radius']}px;
+                margin-top: {self.layout['group_margin_top']}px;
+                padding-top: {self.spacing['xlarge']}px;
+                color: {self.colors['text']};
                 padding: {self.layout['settings_contents_margins']};
             }}
             QGroupBox::title {{
@@ -1052,17 +1096,67 @@ class Theme:
                 left: {self.layout['title_left_offset']}px;
                 padding: {self.layout['title_padding']};
             }}
+            QGroupBox QWidget {{
+                background-color: {self.colors['central_widget']};
+            }}
+            QGroupBox QLabel {{
+                background-color: transparent;
+            }}
+            QGroupBox QCheckBox {{
+                background-color: transparent;
+            }}
+        """
+    
+    def get_settings_transparent_group_box_style(self):
+        """Get transparent group box style for settings dialog."""
+        return f"""
+            QGroupBox {{
+                background: transparent;
+                font-weight: {self.fonts['weight_bold']};
+                font-size: 14px;
+                border: {self.dimensions['border_width']}px solid {self.colors['border']};
+                border-radius: {self.dimensions['border_radius']}px;
+                margin-top: {self.layout['group_margin_top']}px;
+                padding-top: {self.spacing['xlarge']}px;
+                color: {self.colors['text']};
+                padding: {self.layout['settings_contents_margins']};
+            }}
+            QGroupBox::title {{
+                subcontrol-origin: margin;
+                left: {self.layout['title_left_offset']}px;
+                padding: {self.layout['title_padding']};
+            }}
+            QGroupBox QLineEdit {{
+                background-color: #2c2c2c;
+            }}
+            QGroupBox QTextEdit {{
+                background-color: #2c2c2c;
+            }}
+            QGroupBox QSpinBox {{
+                background-color: #2c2c2c;
+            }}
+            QGroupBox QComboBox {{
+                background-color: #2c2c2c;
+            }}
+            QGroupBox QCheckBox::indicator {{
+                background-color: #2c2c2c;
+            }}
+            QGroupBox QLabel {{
+                background-color: transparent;
+            }}
         """
     
     def get_settings_combo_box_style(self):
         """Get combo box style for settings dialog."""
         return f"""
             QComboBox {{
+                background-color: #2c2c2c;
                 border: {self.dimensions['border_width']}px solid {self.colors['border']};
                 border-radius: {self.dimensions['border_radius']}px;
                 padding: {self.layout['input_padding']};
                 font-size: 12px;
                 min-width: 150px;
+                color: {self.colors['text']};
             }}
             QComboBox:focus {{
                 border-color: {self.colors['primary']};
@@ -1136,7 +1230,7 @@ class Theme:
         return f"""
             QListWidget {{
                 border: {self.dimensions['border_width']}px solid {self.colors['border']};
-                background-color: {self.colors['medium_gray']};
+                background-color: #2c2c2c;
                 outline: none !important;
                 font-family: {self.fonts['family']};
                 font-size: {self.fonts['size_medium']}px;
