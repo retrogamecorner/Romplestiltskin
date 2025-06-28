@@ -75,7 +75,8 @@ class SettingsManager:
                 "preferred_regions": ["USA", "Europe", "Japan", "World"]
             },
             "system_filter_settings": {},
-            "ignored_crcs": []  # New setting for ignored CRCs
+            "ignored_crcs": [],  # New setting for ignored CRCs
+            "system_rom_folders": {}  # New setting for system ROM folders
         }
     
     def load_settings(self) -> None:
@@ -202,6 +203,43 @@ class SettingsManager:
     def get_chunk_size_bytes(self) -> int:
         """Get chunk size for file operations in bytes."""
         return self.get("chunk_size_mb", 64) * 1024 * 1024
+    
+    def get_system_rom_folders(self, system_id: str) -> list:
+        """Get ROM folder paths for a specific system.
+        
+        Args:
+            system_id: System ID to get folders for
+            
+        Returns:
+            List of ROM folder paths for the system
+        """
+        system_rom_folders = self.get("system_rom_folders", {})
+        return system_rom_folders.get(str(system_id), [])
+    
+    def set_system_rom_folders(self, system_id: str, folder_paths: list) -> None:
+        """Set ROM folder paths for a specific system.
+        
+        Args:
+            system_id: System ID to set folders for
+            folder_paths: List of ROM folder paths
+        """
+        if "system_rom_folders" not in self.settings:
+            self.settings["system_rom_folders"] = {}
+        
+        self.settings["system_rom_folders"][str(system_id)] = folder_paths.copy()
+        self.save_settings()
+    
+    def add_system_rom_folder(self, system_id: str, folder_path: str) -> None:
+        """Add a ROM folder path for a specific system.
+        
+        Args:
+            system_id: System ID to add folder for
+            folder_path: ROM folder path to add
+        """
+        current_folders = self.get_system_rom_folders(str(system_id))
+        if folder_path not in current_folders:
+            current_folders.append(folder_path)
+            self.set_system_rom_folders(str(system_id), current_folders)
     
     def get_all_settings(self) -> Dict[str, Any]:
         """Get all settings as a dictionary.

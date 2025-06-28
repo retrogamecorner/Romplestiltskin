@@ -515,7 +515,7 @@ class MainWindow(QMainWindow):
 
         for item in items:
             if original_status == ROMStatus.MISSING:
-                crc32 = item.text(4)  # Assuming CRC32 is in the fifth column
+                crc32 = item.text(4)  # CRC32 is in the fifth column for missing ROMs
                 self.scanned_roms_manager.update_rom_status(
                     self.current_system_id,
                     ROMStatus.IGNORED,
@@ -530,9 +530,10 @@ class MainWindow(QMainWindow):
                         current_ignored.append(crc32)
                         self.settings_manager.set_ignored_crcs(current_ignored, self.current_system_id)
             else:
-                file_path = item.text(1)  # Assuming file path is in the second column
-                # Get the CRC32 for this file if available
-                crc32 = item.text(4) if item.columnCount() > 4 else None
+                # Get the full file path from stored data, fallback to displayed text
+                file_path = item.data(1, Qt.ItemDataRole.UserRole) or item.text(1)
+                # Get the CRC32 for this file - for unrecognized ROMs, CRC32 is in column 2
+                crc32 = item.text(2) if item.columnCount() > 2 else None
                 
                 self.scanned_roms_manager.update_rom_status(
                     self.current_system_id,
@@ -611,7 +612,8 @@ class MainWindow(QMainWindow):
             
             # This is a simplification. We'd need to know the original status.
             # For now, we'll move them to unrecognized if they have a file path, and missing if they don't.
-            file_path = item.text(1)
+            # Try to get the full file path from UserRole data first, fallback to text
+            file_path = item.data(1, Qt.ItemDataRole.UserRole) or item.text(1)
             if file_path:
                 self.scanned_roms_manager.update_rom_status(
                     self.current_system_id,
@@ -683,23 +685,53 @@ class MainWindow(QMainWindow):
     def populate_ignored_tree(self):
         """Populate the ignored ROMs tree based on self.ignored_crcs."""
         self.ignored_tree.clear()
-        if not self.all_games or not self.ignored_crcs:
+        if not self.ignored_crcs:
             return
 
         row_number = 0
-        for crc in self.ignored_crcs:
-            game_details = next((g for g in self.all_games if g.get('crc32') == crc), None)
-            if game_details:
+        
+        # First, add games from DAT that are ignored
+        if self.all_games:
+            for crc in self.ignored_crcs:
+                game_details = next((g for g in self.all_games if g.get('crc32') == crc), None)
+                if game_details:
+                    row_number += 1
+                    item = NumericTreeWidgetItem([
+                        str(row_number),
+                        game_details['major_name'],
+                        game_details.get('region', ''),
+                        game_details.get('languages', ''),
+                        game_details['crc32']
+                    ])
+                    item.setData(0, Qt.ItemDataRole.UserRole, row_number) # For sorting
+                    self.ignored_tree.addTopLevelItem(item)
+        
+        # Then, add ignored ROMs from database that are not in DAT (like unrecognized ROMs)
+        if hasattr(self, 'scanned_roms_manager') and self.current_system_id:
+            ignored_roms = self.scanned_roms_manager.get_scanned_roms_by_status(
+                self.current_system_id, ROMStatus.IGNORED
+            )
+            
+            for rom_data in ignored_roms:
+                crc32 = rom_data['calculated_crc32']
+                # Skip if already added from DAT
+                if self.all_games and any(g.get('crc32') == crc32 for g in self.all_games):
+                    continue
+                    
+                filename = Path(rom_data['file_path']).name if rom_data['file_path'] else 'Unknown'
                 row_number += 1
                 item = NumericTreeWidgetItem([
                     str(row_number),
-                    game_details['major_name'],
-                    game_details.get('region', ''),
-                    game_details.get('languages', ''),
-                    game_details['crc32']
+                    filename,  # Use filename for unrecognized ROMs
+                    '',  # No region for unrecognized
+                    '',  # No languages for unrecognized
+                    crc32 or ''
                 ])
                 item.setData(0, Qt.ItemDataRole.UserRole, row_number) # For sorting
+                # Store the full file path in UserRole for column 1 (filename column)
+                item.setData(1, Qt.ItemDataRole.UserRole, rom_data['file_path'])
                 self.ignored_tree.addTopLevelItem(item)
+        
         self.ignored_tree.sortItems(0, Qt.SortOrder.AscendingOrder)
 
     def create_bottom_panel(self) -> QWidget:
@@ -1572,6 +1604,47 @@ class MainWindow(QMainWindow):
                     item.setData(0, Qt.ItemDataRole.UserRole, row_number)
                     self.missing_tree.addTopLevelItem(item)
         
+        # Also add ROMs with MISSING status from the database (e.g., unignored ROMs)
+        if hasattr(self, 'scanned_roms_manager'):
+            missing_roms_from_db = self.scanned_roms_manager.get_scanned_roms_by_status(current_system_id, ROMStatus.MISSING)
+            for rom_data in missing_roms_from_db:
+                crc32 = rom_data.get('calculated_crc32') or rom_data.get('matched_game_crc32')
+                if crc32 and crc32 not in self.ignored_crcs:
+                    # Check if this ROM is already in the missing list (avoid duplicates)
+                    already_added = False
+                    for i in range(self.missing_tree.topLevelItemCount()):
+                        existing_item = self.missing_tree.topLevelItem(i)
+                        if existing_item.text(4) == crc32:  # CRC32 is in column 4
+                            already_added = True
+                            break
+                    
+                    if not already_added:
+                        # Try to find game details from DAT
+                        game_details = next((g for g in self.all_games if g.get('crc32') == crc32), None)
+                        if game_details:
+                            row_number += 1
+                            item = NumericTreeWidgetItem([
+                                str(row_number),
+                                game_details['major_name'],
+                                game_details.get('region', ''),
+                                game_details.get('languages', ''),
+                                game_details['crc32']
+                            ])
+                            item.setData(0, Qt.ItemDataRole.UserRole, row_number)
+                            self.missing_tree.addTopLevelItem(item)
+                        else:
+                            # If no game details found, show basic info
+                            row_number += 1
+                            item = NumericTreeWidgetItem([
+                                str(row_number),
+                                f"Unknown Game (CRC: {crc32[:8]}...)",
+                                '',
+                                '',
+                                crc32
+                            ])
+                            item.setData(0, Qt.ItemDataRole.UserRole, row_number)
+                            self.missing_tree.addTopLevelItem(item)
+        
         # Sort by game name alphabetically
         self.missing_tree.sortItems(0, Qt.SortOrder.AscendingOrder)
             
@@ -1782,6 +1855,8 @@ class MainWindow(QMainWindow):
                 ])
                 # Store numeric value for proper sorting
                 item.setData(0, Qt.ItemDataRole.UserRole, row_number)
+                # Store the full file path for use in operations
+                item.setData(1, Qt.ItemDataRole.UserRole, rom_data['file_path'])
                 self.unrecognized_tree.addTopLevelItem(item)
         elif results:
             # Fallback to memory results
@@ -1796,6 +1871,8 @@ class MainWindow(QMainWindow):
                     ])
                     # Store numeric value for proper sorting
                     item.setData(0, Qt.ItemDataRole.UserRole, row_number)
+                    # Store the full file path for use in operations
+                    item.setData(1, Qt.ItemDataRole.UserRole, result.file_path)
                     self.unrecognized_tree.addTopLevelItem(item)
         
         # Sort by file name alphabetically
