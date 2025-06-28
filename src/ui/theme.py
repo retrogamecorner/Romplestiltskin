@@ -1630,7 +1630,22 @@ class Theme:
     def get_status_bar_style(self):
         """Get style for status bar."""
         return f"""
-            background-color: {self.colors['background']};
-            color: {self.colors['secondary_text']};
-            border: none;
+            QStatusBar {{
+                background-color: {self.colors['background']};
+                color: {self.colors['secondary_text']};
+                border: none;
+            }}
+            QStatusBar QLabel {{
+                background-color: transparent;
+                border: none;
+                color: {self.colors['secondary_text']};
+            }}
+            QStatusBar::item {{
+                border: none;
+            }}
+            QStatusBar QSizeGrip {{
+                width: 0px;
+                height: 0px;
+                background: transparent;
+            }}
         """
