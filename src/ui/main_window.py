@@ -733,6 +733,12 @@ class MainWindow(QMainWindow):
                         game_details['crc32']
                     ])
                     item.setData(0, Qt.ItemDataRole.UserRole, row_number) # For sorting
+                    
+                    # Color code missing ROMs as yellow
+                    missing_color = QColor('#f2d712')  # Yellow for missing ROMs
+                    for col in range(item.columnCount()):
+                        item.setForeground(col, missing_color)
+                    
                     self.ignored_tree.addTopLevelItem(item)
         
         # Then, add ignored ROMs from database that are not in DAT (like unrecognized ROMs)
@@ -759,6 +765,12 @@ class MainWindow(QMainWindow):
                 item.setData(0, Qt.ItemDataRole.UserRole, row_number) # For sorting
                 # Store the full file path in UserRole for column 1 (filename column)
                 item.setData(1, Qt.ItemDataRole.UserRole, rom_data['file_path'])
+                
+                # Color code unrecognized ROMs as orange
+                unrecognized_color = QColor('#ff993c')  # Orange for unrecognized ROMs
+                for col in range(item.columnCount()):
+                    item.setForeground(col, unrecognized_color)
+                
                 self.ignored_tree.addTopLevelItem(item)
         
         self.ignored_tree.sortItems(1, Qt.SortOrder.AscendingOrder)
