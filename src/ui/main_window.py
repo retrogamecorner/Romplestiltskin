@@ -401,7 +401,7 @@ class MainWindow(QMainWindow):
         # Ignored ROMs tree
         self.ignored_tree = QTreeWidget()
         self.ignored_tree.setHeaderLabels([
-            "#", "Game Name", "Region", "Language", "CRC32"
+            "#", "Game Name", "Status", "Region", "Language", "CRC32"
         ])
         self.ignored_tree.setAlternatingRowColors(True)
         self.ignored_tree.setIndentation(0)
@@ -519,7 +519,8 @@ class MainWindow(QMainWindow):
                 self.scanned_roms_manager.update_rom_status(
                     self.current_system_id,
                     ROMStatus.IGNORED,
-                    crc32=crc32
+                    crc32=crc32,
+                    original_status=ROMStatus.MISSING
                 )
                 # Add to in-memory ignored_crcs set
                 if crc32:
@@ -598,7 +599,7 @@ class MainWindow(QMainWindow):
 
         for item in items:
             # Get the CRC32 value for this item
-            crc32 = item.text(4)
+            crc32 = item.text(5)
             
             # Remove from in-memory ignored_crcs set
             if crc32 and crc32 in self.ignored_crcs:
@@ -654,6 +655,9 @@ class MainWindow(QMainWindow):
             for rom in missing_roms:
                 print(f"DEBUG: Missing ROM: CRC32={rom.get('calculated_crc32')}, status={rom.get('status')}")
 
+        # Update the ignored_crcs attribute to reflect the changes
+        self.ignored_crcs = set(self.settings_manager.get_ignored_crcs(self.current_system_id))
+        
         # Refresh the ROM lists
         print("DEBUG: About to call update_rom_lists()")
         self.update_rom_lists()
@@ -728,6 +732,7 @@ class MainWindow(QMainWindow):
                     item = NumericTreeWidgetItem([
                         str(row_number),
                         game_details['major_name'],
+                        'Missing',
                         game_details.get('region', ''),
                         game_details.get('languages', ''),
                         game_details['crc32']
@@ -758,6 +763,7 @@ class MainWindow(QMainWindow):
                 item = NumericTreeWidgetItem([
                     str(row_number),
                     filename,  # Use filename for unrecognized ROMs
+                    'Unrecognised',
                     '',  # No region for unrecognized
                     '',  # No languages for unrecognized
                     crc32 or ''
