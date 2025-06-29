@@ -33,13 +33,15 @@ Romplestiltskin aims to simplify these tasks, providing a clear overview and pow
     *   Scan your local ROM folders.
     *   Verify ROMs against the DAT information using CRC checksums and file sizes.
     *   Automatic filename correction suggestions for incorrectly named ROMs.
+*   **Quick Folder Access:** Instantly open the ROM folder for the selected system directly from the main interface.
 *   **Clear Visual Feedback:**
     *   Dual-panel view: DAT game list on one side, your collection on the other.
-    *   Color-coding to quickly identify status:
-        *   **Green:** Correctly named and verified ROM.
-        *   **Orange:** ROM is correct but filename needs fixing.
-        *   **Red:** Missing or broken/corrupt ROM.
-        *   **Grey:** Extra file in your collection not recognized by the DAT.
+    *   Color-coded tabs and lists to quickly identify status:
+        *   **Correct (Green Check):** Your ROM is verified and correctly named.
+        *   **Missing (Yellow Question Mark):** A ROM from the DAT file is not in your collection.
+        *   **Ignored (Gray Ban):** A ROM you have chosen to ignore.
+        *   **Unrecognised (Orange Warning Triangle):** A file in your ROM folder that is not in the DAT file.
+        *   **Broken (Red Exclamation Circle):** A ROM that is corrupt or has a bad checksum.
 *   **File Management:**
     *   Rename ROMs to match DAT standards.
     *   Move unrecognized files to a dedicated 'extra' folder.
