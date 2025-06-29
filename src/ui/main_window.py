@@ -7,6 +7,7 @@ Provides the primary user interface for ROM collection management.
 
 import os
 import shutil
+import subprocess
 from pathlib import Path
 from typing import Dict, Any, List, Optional
 
@@ -190,7 +191,30 @@ class MainWindow(QMainWindow):
         
         controls_layout.addStretch()
         
-        # Action buttons moved to menu columns widget
+        # Action buttons
+        self.open_folder_button = QPushButton("Open ROM Folder")
+        self.open_folder_button.setIcon(qta.icon('fa5s.folder-open', color='#d6d6d6', scale_factor=0.8))
+        self.open_folder_button.setStyleSheet(self.theme.get_button_style("ScanButton"))
+        self.open_folder_button.clicked.connect(self.open_rom_folder)
+        controls_layout.addWidget(self.open_folder_button)
+        
+        self.scan_button = QPushButton("Scan ROM Folder")
+        self.scan_button.setIcon(qta.icon('fa5s.search', color='#d6d6d6', scale_factor=0.8))
+        self.scan_button.setStyleSheet(self.theme.get_button_style("ScanButton"))
+        self.scan_button.clicked.connect(lambda: self.scan_rom_folder(prompt_for_folder=True))
+        controls_layout.addWidget(self.scan_button)
+        
+        self.import_dat_button = QPushButton("Import DAT Files")
+        self.import_dat_button.setIcon(qta.icon('fa5s.file-import', color='#d6d6d6', scale_factor=0.8))
+        self.import_dat_button.setStyleSheet(self.theme.get_button_style("QMainButton"))
+        self.import_dat_button.clicked.connect(self.import_dat_files)
+        controls_layout.addWidget(self.import_dat_button)
+        
+        self.clear_rom_data_button = QPushButton("Clear ROM Data")
+        self.clear_rom_data_button.setIcon(qta.icon('fa5s.trash', color='#d6d6d6', scale_factor=0.8))
+        self.clear_rom_data_button.setStyleSheet(self.theme.get_button_style("ClearButton"))
+        self.clear_rom_data_button.clicked.connect(self.clear_rom_data)
+        controls_layout.addWidget(self.clear_rom_data_button)
         
 
         main_layout.addLayout(controls_layout)
@@ -1031,30 +1055,12 @@ class MainWindow(QMainWindow):
         uk_flag_label.setFixedSize(40, 24)
         uk_flag_label.setAlignment(Qt.AlignmentFlag.AlignLeft | Qt.AlignmentFlag.AlignVCenter)
         
-        # Right column - Action buttons
+        # Right column - Empty for now (buttons moved to top controls)
         buttons_container = QWidget()
         buttons_layout = QHBoxLayout(buttons_container)
         buttons_layout.setContentsMargins(0, 0, 0, 0)
         buttons_layout.setSpacing(5)
-        
-        # Create action buttons
-        self.scan_button = QPushButton("Scan ROM Folder")
-        self.scan_button.setIcon(qta.icon('fa5s.search', color='#d6d6d6', scale_factor=0.8))
-        self.scan_button.setStyleSheet(self.theme.get_button_style("ScanButton"))
-        self.scan_button.clicked.connect(lambda: self.scan_rom_folder(prompt_for_folder=True))
-        buttons_layout.addWidget(self.scan_button)
-        
-        self.import_dat_button = QPushButton("Import DAT Files")
-        self.import_dat_button.setIcon(qta.icon('fa5s.file-import', color='#d6d6d6', scale_factor=0.8))
-        self.import_dat_button.setStyleSheet(self.theme.get_button_style("QMainButton"))
-        self.import_dat_button.clicked.connect(self.import_dat_files)
-        buttons_layout.addWidget(self.import_dat_button)
-        
-        self.clear_rom_data_button = QPushButton("Clear ROM Data")
-        self.clear_rom_data_button.setIcon(qta.icon('fa5s.trash', color='#d6d6d6', scale_factor=0.8))
-        self.clear_rom_data_button.setStyleSheet(self.theme.get_button_style("ClearButton"))
-        self.clear_rom_data_button.clicked.connect(self.clear_rom_data)
-        buttons_layout.addWidget(self.clear_rom_data_button)
+
         
         # Add to layout
         menu_columns_layout.addWidget(uk_flag_label, 0, Qt.AlignmentFlag.AlignLeft)
@@ -1350,6 +1356,32 @@ class MainWindow(QMainWindow):
 
         self.scan_thread.start()
         self.scan_progress_dialog.exec() # Show modally and block until accepted or rejected
+
+    def open_rom_folder(self):
+        """Open the ROM folder of the currently selected system in Windows Explorer."""
+        if not self.current_system_id:
+            QMessageBox.warning(self, "No System Selected", "Please select a system first.")
+            return
+
+        system_folders = self.settings_manager.get_system_rom_folders(str(self.current_system_id))
+        
+        if not system_folders:
+            QMessageBox.warning(self, "No ROM Folder Set", "No ROM folder is configured for this system. Please scan a ROM folder first.")
+            return
+        
+        folder_path = Path(system_folders[0])
+        
+        if not folder_path.exists():
+            QMessageBox.warning(self, "Folder Not Found", f"The ROM folder does not exist:\n{folder_path}")
+            return
+        
+        try:
+            # Open folder in Windows Explorer
+            # Note: Explorer may return exit code 1 even when successful, so we don't use check=True
+            subprocess.run(['explorer', str(folder_path)])
+            self.status_bar.showMessage(f"Opened ROM folder: {folder_path.name}")
+        except Exception as e:
+            QMessageBox.critical(self, "Error", f"An unexpected error occurred while opening folder:\n{e}")
 
     def scan_rom_folder(self, prompt_for_folder=True):
         """Scan ROM folder for current system."""
