@@ -1,6 +1,6 @@
 # Romplestiltskin - ROM Collection Manager
 
-**Created by Steve Mellor**
+**Created by Mr. Steve Mellor**
 
 ## Introduction
 
