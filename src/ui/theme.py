@@ -709,10 +709,9 @@ class Theme:
         QCheckBox::indicator:checked {{
             width: 16px;
             height: 16px;
-            border: 2px solid #484848;
+            border: 2px solid #4CAF50;
             border-radius: 3px;
-            background-color: transparent;
-            image: url(src/ui/flags/checkmark.svg);
+            background-color: #4CAF50;
         }}
         
         """

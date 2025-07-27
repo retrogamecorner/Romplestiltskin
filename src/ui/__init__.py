@@ -8,9 +8,11 @@ Contains PyQt6-based GUI components for the application.
 from .main_window import MainWindow
 from .settings_dialog import SettingsDialog
 from .progress_dialog import ProgressDialog
+from . import theme
 
 __all__ = [
     'MainWindow',
     'SettingsDialog',
-    'ProgressDialog'
+    'ProgressDialog',
+    'theme'
 ]

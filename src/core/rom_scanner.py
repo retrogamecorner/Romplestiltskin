@@ -8,6 +8,8 @@ Handles scanning ROM folders, calculating checksums, and verifying ROMs against 
 import os
 import zlib
 import hashlib
+import zipfile
+import tempfile
 from pathlib import Path
 from typing import Dict, Any, List, Optional, Tuple, Callable
 from enum import Enum
@@ -90,6 +92,53 @@ class ROMScanner:
             '.psp', '.cso'  # PSP
         }
     
+    def _is_zip_file(self, file_path: str) -> bool:
+        """Check if a file is a zip file.
+        
+        Args:
+            file_path: Path to the file
+            
+        Returns:
+            True if file is a zip file, False otherwise
+        """
+        try:
+            return zipfile.is_zipfile(file_path)
+        except Exception:
+            return False
+    
+    def _extract_rom_from_zip(self, zip_path: str) -> Optional[Tuple[bytes, str]]:
+        """Extract the first ROM file from a zip archive.
+        
+        Args:
+            zip_path: Path to the zip file
+            
+        Returns:
+            Tuple of (file_content, file_extension) or None if no ROM found
+        """
+        try:
+            with zipfile.ZipFile(zip_path, 'r') as zip_file:
+                # Get list of files in the zip
+                file_list = zip_file.namelist()
+                
+                # Find the first ROM file (excluding directories and system files)
+                for file_name in file_list:
+                    if not file_name.endswith('/') and not file_name.startswith('__MACOSX'):
+                        file_ext = Path(file_name).suffix.lower()
+                        # Check if it's a ROM file based on extension
+                        if file_ext in self.supported_extensions or file_ext in {'.bin', '.rom', '.img'}:
+                            # Extract the file content
+                            file_content = zip_file.read(file_name)
+                            return file_content, file_ext
+                        # If no specific ROM extension, take the first non-system file
+                        elif not any(file_name.lower().endswith(sys_ext) for sys_ext in ['.txt', '.nfo', '.diz', '.md']):
+                            file_content = zip_file.read(file_name)
+                            return file_content, file_ext
+                            
+                return None
+        except Exception as e:
+            print(f"Error extracting ROM from zip {zip_path}: {e}")
+            return None
+    
     def calculate_crc32(self, file_path: str, progress_callback: Optional[Callable[[int, int], None]] = None) -> Optional[str]:
         """Calculate CRC32 checksum of a file.
         
@@ -101,6 +150,26 @@ class ROMScanner:
             CRC32 checksum as hex string, or None if error
         """
         try:
+            # Check if this is a zip file
+            if self._is_zip_file(file_path):
+                # Extract ROM content from zip
+                rom_data = self._extract_rom_from_zip(file_path)
+                if rom_data is None:
+                    print(f"No ROM file found in zip: {file_path}")
+                    return None
+                
+                file_content, _ = rom_data
+                # Calculate CRC32 of the extracted content
+                crc = zlib.crc32(file_content)
+                
+                # Simulate progress callback for zip extraction
+                if progress_callback:
+                    progress_callback(len(file_content), len(file_content))
+                
+                # Ensure unsigned 32-bit value
+                return f"{crc & 0xFFFFFFFF:08x}"
+            
+            # Regular file processing
             crc = 0
             file_size = os.path.getsize(file_path)
             bytes_read = 0
@@ -135,7 +204,24 @@ class ROMScanner:
             ROMScanResult object
         """
         try:
-            file_size = os.path.getsize(file_path)
+            # Check if this is a zip file and get appropriate file size
+            if self._is_zip_file(file_path):
+                # Extract ROM data to get the actual ROM file size
+                rom_data = self._extract_rom_from_zip(file_path)
+                if rom_data is None:
+                    return ROMScanResult(
+                        file_path=file_path,
+                        file_size=os.path.getsize(file_path),
+                        calculated_crc32=None,
+                        status=ROMStatus.BROKEN,
+                        system_id=system_id,
+                        error_message="No ROM file found in zip"
+                    )
+                
+                file_content, internal_extension = rom_data
+                file_size = len(file_content)  # Use size of extracted ROM, not zip
+            else:
+                file_size = os.path.getsize(file_path)
             
             # Calculate CRC32
             calculated_crc = self.calculate_crc32(file_path)
@@ -153,8 +239,22 @@ class ROMScanner:
             matched_game = self.db_manager.get_game_by_crc(system_id, calculated_crc, file_size)
             
             if matched_game:
-                # Check if filename matches
-                filename = Path(file_path).name
+                # Check if filename matches - for zip files, use the internal ROM name
+                if self._is_zip_file(file_path):
+                    rom_data = self._extract_rom_from_zip(file_path)
+                    if rom_data:
+                        # Get the first file name from the zip
+                        with zipfile.ZipFile(file_path, 'r') as zip_file:
+                            file_list = [f for f in zip_file.namelist() if not f.endswith('/') and not f.startswith('__MACOSX')]
+                            if file_list:
+                                filename = Path(file_list[0]).name
+                            else:
+                                filename = Path(file_path).name
+                    else:
+                        filename = Path(file_path).name
+                else:
+                    filename = Path(file_path).name
+                    
                 expected_filename = matched_game['dat_rom_name']
                 
                 if filename.lower() == expected_filename.lower():
@@ -173,7 +273,21 @@ class ROMScanner:
                 )
             
             # No CRC match, try filename similarity
-            filename = Path(file_path).stem  # Without extension
+            # For zip files, use the internal ROM filename
+            if self._is_zip_file(file_path):
+                rom_data = self._extract_rom_from_zip(file_path)
+                if rom_data:
+                    with zipfile.ZipFile(file_path, 'r') as zip_file:
+                        file_list = [f for f in zip_file.namelist() if not f.endswith('/') and not f.startswith('__MACOSX')]
+                        if file_list:
+                            filename = Path(file_list[0]).stem  # Without extension
+                        else:
+                            filename = Path(file_path).stem
+                else:
+                    filename = Path(file_path).stem
+            else:
+                filename = Path(file_path).stem  # Without extension
+                
             similar_games = self.db_manager.search_games_by_filename(system_id, filename, limit=5)
             
             best_match = None
