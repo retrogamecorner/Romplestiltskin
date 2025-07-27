@@ -51,22 +51,65 @@ jobs:
       - name: Create directories and verify structure
         run: |
           mkdir -p dist
+          mkdir -p src/ui/texture
+          # Create a placeholder file in texture directory to ensure it's not empty
+          touch src/ui/texture/.gitkeep
           echo "Current directory contents:"
           ls -la
           echo "Source directory contents:"
           ls -la src/
           echo "UI directory contents:"
           ls -la src/ui/
+          echo "Texture directory contents:"
+          ls -la src/ui/texture/
         shell: bash
 
       - name: Create OS-specific spec file
         run: |
-          if [ "${{ matrix.os }}" = "windows-latest" ]; then
-            cp Romplestiltskin.spec ${{ matrix.spec-file }}
-          else
-            # Create non-Windows spec (change distpath to dist)
-            sed "s/distpath='build\/windows'/distpath='dist'/g" Romplestiltskin.spec > ${{ matrix.spec-file }}
-          fi
+          python3 << 'EOF'
+          import os
+          import shutil
+          
+          # Read the original spec file
+          with open('Romplestiltskin.spec', 'r') as f:
+              content = f.read()
+          
+          # Determine the target spec file and distpath
+          matrix_os = '${{ matrix.os }}'
+          spec_file = '${{ matrix.spec-file }}'
+          
+          if matrix_os == 'windows-latest':
+              # Keep original distpath for Windows
+              distpath = "build/windows"
+          else:
+              # Change distpath for non-Windows
+              content = content.replace("distpath='build/windows'", "distpath='dist'")
+              distpath = "dist"
+          
+          # Handle texture directory conditionally
+          texture_path = 'src/ui/texture'
+          if os.path.exists(texture_path) and os.listdir(texture_path):
+              # Texture directory exists and is not empty, keep it
+              pass
+          else:
+              # Remove texture directory from datas
+              lines = content.split('\n')
+              new_lines = []
+              skip_texture = False
+              for line in lines:
+                  if "(os.path.join(src_path, 'ui', 'texture'), 'ui/texture')" in line:
+                      skip_texture = True
+                      continue
+                  new_lines.append(line)
+              content = '\n'.join(new_lines)
+          
+          # Write the modified spec file
+          with open(spec_file, 'w') as f:
+              f.write(content)
+          
+          print(f"Generated {spec_file} for {matrix_os}")
+          EOF
+          
           echo "Generated spec file contents:"
           cat ${{ matrix.spec-file }}
         shell: bash
