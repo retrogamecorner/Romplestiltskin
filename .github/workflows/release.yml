@@ -1,31 +1,37 @@
 name: Continuous Build
 
+# This workflow runs on every push to the main branch
 on:
   push:
     branches:
-      - main # Change to 'master' if that is your default branch
+      - main  # Change to 'master' if that is your default branch
 
 jobs:
   build:
+    # A friendly name for the job
     name: Build for ${{ matrix.os-name }}
     
+    # Define the build matrix for Windows, macOS, and Linux
     strategy:
-      fail-fast: false
       matrix:
         include:
           - os: windows-latest
             os-name: Windows
             output-name: Romplestiltskin-Windows.exe
             pyinstaller-output: Romplestiltskin.exe
+            spec-file: Romplestiltskin-windows.spec
           - os: macos-latest
             os-name: macOS
             output-name: Romplestiltskin-macOS
             pyinstaller-output: Romplestiltskin
+            spec-file: Romplestiltskin-macos.spec
           - os: ubuntu-latest
             os-name: Linux
             output-name: Romplestiltskin-Linux
             pyinstaller-output: Romplestiltskin
+            spec-file: Romplestiltskin-linux.spec
 
+    # The operating system the job will run on
     runs-on: ${{ matrix.os }}
 
     steps:
@@ -42,24 +48,66 @@ jobs:
           python -m pip install --upgrade pip
           pip install -r requirements.txt
 
-      - name: Build executable with PyInstaller
-        # FIX: Added --add-data flags to include non-code assets like images and themes.
-        # This is the crucial step to prevent FileNotFoundError in the packaged app.
+      - name: Create directories and verify structure
         run: |
-          pyinstaller --onefile --noconsole --name "Romplestiltskin" \
-            --paths src \
-            --add-data "src/ui/flags:ui/flags" \
-            --add-data "src/ui/texture:ui/texture" \
-            --add-data "src/ui/theme.py:ui" \
-            --hidden-import PyQt6.sip \
-            main.py
+          mkdir -p dist
+          echo "Current directory contents:"
+          ls -la
+          echo "Source directory contents:"
+          ls -la src/
+          echo "UI directory contents:"
+          ls -la src/ui/
+        shell: bash
 
-      - name: Rename executable for release
-        run: mv dist/${{ matrix.pyinstaller-output }} dist/${{ matrix.output-name }}
+      - name: Create OS-specific spec file
+        run: |
+          if [ "${{ matrix.os }}" = "windows-latest" ]; then
+            cp Romplestiltskin.spec ${{ matrix.spec-file }}
+          else
+            # Create non-Windows spec (change distpath to dist)
+            sed "s/distpath='build\/windows'/distpath='dist'/g" Romplestiltskin.spec > ${{ matrix.spec-file }}
+          fi
+          echo "Generated spec file contents:"
+          cat ${{ matrix.spec-file }}
+        shell: bash
+
+      - name: Build executable with PyInstaller
+        run: pyinstaller ${{ matrix.spec-file }}
+
+      - name: Debug build output
+        run: |
+          echo "Build directory contents:"
+          if [ "${{ matrix.os }}" = "windows-latest" ]; then
+            ls -la build/ || echo "No build directory"
+            ls -la build/windows/ || echo "No build/windows directory"
+          fi
+          echo "Dist directory contents:"
+          ls -la dist/ || echo "No dist directory"
+        shell: bash
+
+      - name: Prepare artifact path
+        run: |
+          if [ "${{ matrix.os }}" = "windows-latest" ]; then
+            if [ -f "build/windows/${{ matrix.pyinstaller-output }}" ]; then
+              cp build/windows/${{ matrix.pyinstaller-output }} dist/${{ matrix.output-name }}
+            else
+              echo "Error: build/windows/${{ matrix.pyinstaller-output }} not found"
+              exit 1
+            fi
+          else
+            if [ -f "dist/${{ matrix.pyinstaller-output }}" ]; then
+              mv dist/${{ matrix.pyinstaller-output }} dist/${{ matrix.output-name }}
+            else
+              echo "Error: dist/${{ matrix.pyinstaller-output }} not found"
+              exit 1
+            fi
+          fi
         shell: bash
 
       - name: Upload Build Artifact
         uses: actions/upload-artifact@v4
         with:
-          name: Romplestiltskin-${{ matrix.os-name }}
+          # The name of the downloadable artifact zip file
+          name: Romplestiltskin-Build-v0.1.0-pre-alpha.${{ github.run_number }}-${{ matrix.os-name }}
+          # The path to the file to upload
           path: dist/${{ matrix.output-name }}
