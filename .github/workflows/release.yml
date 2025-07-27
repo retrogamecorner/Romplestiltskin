@@ -10,21 +10,21 @@ jobs:
     name: Build for ${{ matrix.os-name }}
     
     strategy:
-      fail-fast: false # Allows all jobs to run even if one fails
+      fail-fast: false
       matrix:
         include:
           - os: windows-latest
             os-name: Windows
             output-name: Romplestiltskin-Windows.exe
-            pyinstaller-output: main.exe # Adjusted for new entry point
+            pyinstaller-output: Romplestiltskin.exe
           - os: macos-latest
             os-name: macOS
             output-name: Romplestiltskin-macOS
-            pyinstaller-output: main
+            pyinstaller-output: Romplestiltskin
           - os: ubuntu-latest
             os-name: Linux
             output-name: Romplestiltskin-Linux
-            pyinstaller-output: main
+            pyinstaller-output: Romplestiltskin
 
     runs-on: ${{ matrix.os }}
 
@@ -43,21 +43,23 @@ jobs:
           pip install -r requirements.txt
 
       - name: Build executable with PyInstaller
-        # CORRECTED to build main.py instead of romplestiltskin.py
-        # Kept hidden-import to prevent the next likely error with PyQt6
-        run: pyinstaller --onefile --noconsole --name "Romplestiltskin" --hidden-import PyQt6.sip main.py
+        # FIX: Added --add-data flags to include non-code assets like images and themes.
+        # This is the crucial step to prevent FileNotFoundError in the packaged app.
+        run: |
+          pyinstaller --onefile --noconsole --name "Romplestiltskin" \
+            --paths src \
+            --add-data "src/ui/flags:ui/flags" \
+            --add-data "src/ui/texture:ui/texture" \
+            --add-data "src/ui/theme.py:ui" \
+            --hidden-import PyQt6.sip \
+            main.py
 
-      - name: Rename the artifact for clarity
-        # Renames 'dist/Romplestiltskin.exe' to 'dist/Romplestiltskin-Windows.exe', etc.
-        run: mv dist/Romplestiltskin*${{ matrix.pyinstaller-output-suffix }} dist/${{ matrix.output-name }}
+      - name: Rename executable for release
+        run: mv dist/${{ matrix.pyinstaller-output }} dist/${{ matrix.output-name }}
         shell: bash
-        # Added a matrix variable for the suffix (.exe or empty) to make mv work on all platforms
-        env:
-            pyinstaller-output-suffix: ${{ matrix.os == 'windows-latest' && '.exe' || '' }}
-
 
       - name: Upload Build Artifact
         uses: actions/upload-artifact@v4
         with:
-          name: Romplestiltskin-Build-v0.1.0-pre-alpha.${{ github.run_number }}
+          name: Romplestiltskin-${{ matrix.os-name }}
           path: dist/${{ matrix.output-name }}
